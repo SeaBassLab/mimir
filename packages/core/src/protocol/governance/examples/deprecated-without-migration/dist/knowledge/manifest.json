@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "resources": [
+    {
+      "type": "service",
+      "id": "acme.platform.service.legacyauth",
+      "name": "Legacy Auth Service",
+      "deprecated": true,
+      "deprecationReason": "Service replaced by modern auth stack.",
+      "metadata": {
+        "governance": {
+          "authority": "required",
+          "fields": {
+            "name": {
+              "authority": "required",
+              "selectedEvidenceId": "ev-1",
+              "evidence": [
+                {
+                  "evidenceId": "ev-1",
+                  "sourceType": "human",
+                  "sourceRef": "Architecture review meeting notes",
+                  "extractedAt": "2025-01-01T00:00:00.000Z",
+                  "confidence": "high",
+                  "authority": "required",
+                  "scope": "service"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

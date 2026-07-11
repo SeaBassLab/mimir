@@ -1,0 +1,9 @@
+{
+  "name": "@acme/existing-aps",
+  "version": "1.0.0",
+  "private": true,
+  "aps": {
+    "version": 1,
+    "manifest": "./dist/aps/manifest.json"
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "components": [
+    {
+      "type": "component",
+      "id": "acme.reactexports.component.button",
+      "name": "Button",
+      "package": "@acme/react-exports",
+      "import": "Button",
+      "description": "Primary action trigger for form submissions and critical confirmations.",
+      "props": {
+        "label": {
+          "name": "label",
+          "type": "string",
+          "required": true
+        },
+        "disabled": {
+          "name": "disabled",
+          "type": "boolean",
+          "required": false
+        }
+      },
+      "variants": [
+        "Primary",
+        "Secondary"
+      ],
+      "whenToUse": [],
+      "whenNotToUse": [],
+      "governance": {
+        "fields": {
+          "id": {
+            "evidence": [
+              {
+                "sourceType": "package",
+                "sourceRef": "package.json",
+                "confidence": "high"
+              }
+            ]
+          },
+          "name": {
+            "evidence": [
+              {
+                "sourceType": "typescript",
+                "sourceRef": "src/Button.ts",
+                "confidence": "high"
+              }
+            ]
+          },
+          "package": {
+            "evidence": [
+              {
+                "sourceType": "package",
+                "sourceRef": "package.json",
+                "confidence": "high"
+              }
+            ]
+          },
+          "import": {
+            "evidence": [
+              {
+                "sourceType": "typescript",
+                "sourceRef": "src/Button.ts",
+                "confidence": "high"
+              }
+            ]
+          },
+          "description": {
+            "evidence": [
+              {
+                "sourceType": "readme",
+                "sourceRef": "README.md",
+                "confidence": "medium"
+              }
+            ]
+          },
+          "props": {
+            "evidence": [
+              {
+                "sourceType": "typescript",
+                "sourceRef": "src/Button.ts",
+                "confidence": "high"
+              }
+            ]
+          },
+          "variants": {
+            "evidence": [
+              {
+                "sourceType": "storybook",
+                "sourceRef": "src/Button.stories.ts",
+                "confidence": "medium"
+              }
+            ]
+          },
+          "whenToUse": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'whenToUse'"
+              }
+            ]
+          },
+          "whenNotToUse": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'whenNotToUse'"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

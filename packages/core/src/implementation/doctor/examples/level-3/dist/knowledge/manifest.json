@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "components": [
+    {
+      "type": "component",
+      "id": "acme.platform.component.button",
+      "name": "Button",
+      "description": "Primary action button",
+      "package": "@acme/ui",
+      "import": "Button",
+      "whenToUse": ["Primary actions"],
+      "whenNotToUse": ["Inline text links"],
+      "metadata": {
+        "governance": {
+          "authority": "advisory",
+          "provenance": {
+            "source": "storybook"
+          },
+          "evidence": [
+            {
+              "evidenceId": "ev-component-1",
+              "sourceType": "architecture-policy",
+              "sourceRef": "docs/policies/ui.md#button",
+              "extractedAt": "2025-01-01T00:00:00.000Z",
+              "confidence": "high",
+              "authority": "policy",
+              "applicability": {
+                "framework": ["react"],
+                "layer": ["frontend"]
+              }
+            }
+          ],
+          "applicability": {
+            "framework": ["react"],
+            "layer": ["frontend"]
+          },
+          "lifecycle": {
+            "state": "active"
+          },
+          "ownership": {
+            "team": "ui-platform"
+          },
+          "conflicts": [],
+          "migrations": ["mig-button-v1"],
+          "versionCompatibility": {
+            "react": ">=18"
+          },
+          "reviewLifecycle": {
+            "lastReviewedAt": "2025-01-10",
+            "nextReviewAt": "2025-06-10"
+          },
+          "fields": {
+            "description": {
+              "authority": "policy",
+              "selectedEvidenceId": "ev-component-1",
+              "evidence": [
+                {
+                  "evidenceId": "ev-component-1",
+                  "sourceType": "architecture-policy",
+                  "sourceRef": "docs/policies/ui.md#button",
+                  "extractedAt": "2025-01-01T00:00:00.000Z",
+                  "confidence": "high",
+                  "authority": "policy",
+                  "applicability": {
+                    "framework": ["react"],
+                    "layer": ["frontend"]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "type": "rule",
+      "id": "acme.platform.rule.preferqueryhooks",
+      "name": "Prefer Query Hooks",
+      "description": "Use query hooks for server data",
+      "severity": "high",
+      "scope": "frontend",
+      "appliesTo": ["react"],
+      "metadata": {
+        "governance": {
+          "authority": "policy",
+          "provenance": {
+            "source": "architecture-policy"
+          },
+          "evidence": [
+            {
+              "evidenceId": "ev-rule-1",
+              "sourceType": "architecture-policy",
+              "sourceRef": "docs/policies/frontend.md#query",
+              "extractedAt": "2025-01-01T00:00:00.000Z",
+              "confidence": "high",
+              "authority": "policy",
+              "applicability": {
+                "framework": ["react"],
+                "layer": ["frontend"]
+              }
+            }
+          ],
+          "applicability": {
+            "framework": ["react"],
+            "layer": ["frontend"]
+          },
+          "lifecycle": {
+            "state": "active"
+          },
+          "ownership": {
+            "team": "frontend-architecture"
+          },
+          "conflicts": [],
+          "migrations": ["mig-rule-v1"],
+          "versionCompatibility": {
+            "react": ">=18"
+          },
+          "reviewLifecycle": {
+            "lastReviewedAt": "2025-01-10",
+            "nextReviewAt": "2025-06-10"
+          },
+          "fields": {
+            "description": {
+              "authority": "policy",
+              "selectedEvidenceId": "ev-rule-1",
+              "evidence": [
+                {
+                  "evidenceId": "ev-rule-1",
+                  "sourceType": "architecture-policy",
+                  "sourceRef": "docs/policies/frontend.md#query",
+                  "extractedAt": "2025-01-01T00:00:00.000Z",
+                  "confidence": "high",
+                  "authority": "policy",
+                  "applicability": {
+                    "framework": ["react"],
+                    "layer": ["frontend"]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "type": "example",
+      "id": "acme.platform.example.buttonprimary",
+      "name": "Button Primary",
+      "description": "Primary button usage",
+      "code": "<Button variant=\"primary\">Save</Button>",
+      "imports": ["import { Button } from '@acme/ui'"],
+      "relatedResources": ["acme.platform.component.button"],
+      "metadata": {
+        "governance": {
+          "authority": "advisory",
+          "provenance": {
+            "source": "readme"
+          },
+          "evidence": [
+            {
+              "evidenceId": "ev-example-1",
+              "sourceType": "readme",
+              "sourceRef": "docs/examples/button.md",
+              "extractedAt": "2025-01-01T00:00:00.000Z",
+              "confidence": "medium",
+              "authority": "advisory"
+            }
+          ],
+          "applicability": {
+            "framework": ["react"],
+            "layer": ["frontend"]
+          },
+          "lifecycle": {
+            "state": "active"
+          },
+          "ownership": {
+            "team": "developer-experience"
+          },
+          "conflicts": [],
+          "migrations": ["mig-example-v1"],
+          "versionCompatibility": {
+            "react": ">=18"
+          },
+          "reviewLifecycle": {
+            "lastReviewedAt": "2025-01-10",
+            "nextReviewAt": "2025-06-10"
+          },
+          "fields": {
+            "description": {
+              "authority": "advisory",
+              "selectedEvidenceId": "ev-example-1",
+              "evidence": [
+                {
+                  "evidenceId": "ev-example-1",
+                  "sourceType": "readme",
+                  "sourceRef": "docs/examples/button.md",
+                  "extractedAt": "2025-01-01T00:00:00.000Z",
+                  "confidence": "medium",
+                  "authority": "advisory"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "components": [
+    {
+      "name": "Button"
+    }
+  ],
+  "rules": [
+    {
+      "name": "PreferQueryHooks"
+    }
+  ],
+  "examples": [
+    {
+      "name": "ButtonPrimary"
+    }
+  ]
+}

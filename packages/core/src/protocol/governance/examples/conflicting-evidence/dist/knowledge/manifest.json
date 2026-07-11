@@ -1,0 +1,59 @@
+{
+  "version": 2,
+  "resources": [
+    {
+      "type": "pattern",
+      "id": "acme.platform.pattern.apiversioning",
+      "name": "API Versioning Pattern",
+      "description": "Version APIs via URI prefix",
+      "metadata": {
+        "governance": {
+          "authority": "advisory",
+          "fields": {
+            "description": {
+              "authority": "required",
+              "conflictId": "conf-1",
+              "evidence": [
+                {
+                  "evidenceId": "ev-a",
+                  "sourceType": "readme",
+                  "sourceRef": "docs/api.md#versioning",
+                  "extractedAt": "2025-01-01T00:00:00.000Z",
+                  "confidence": "medium",
+                  "authority": "required",
+                  "scope": "api"
+                },
+                {
+                  "evidenceId": "ev-b",
+                  "sourceType": "typescript",
+                  "sourceRef": "src/http/router.ts",
+                  "extractedAt": "2025-01-01T00:00:00.000Z",
+                  "confidence": "high",
+                  "authority": "required",
+                  "scope": "api"
+                }
+              ]
+            }
+          },
+          "conflicts": [
+            {
+              "id": "conf-1",
+              "fieldPath": "description",
+              "selectedCandidateId": "ev-c",
+              "rejectedCandidateIds": ["ev-a"],
+              "explanation": "Selection points to an unknown candidate to keep this fixture conflict-negative.",
+              "candidates": [
+                {
+                  "id": "ev-a"
+                },
+                {
+                  "id": "ev-b"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

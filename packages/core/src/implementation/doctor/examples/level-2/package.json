@@ -1,0 +1,9 @@
+{
+  "name": "aps-doctor-fixture-level-2",
+  "version": "1.0.0",
+  "private": true,
+  "aps": {
+    "version": 1,
+    "manifest": "./dist/knowledge/manifest.json"
+  }
+}

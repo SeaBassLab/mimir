@@ -1,0 +1,58 @@
+{
+  "type": "api",
+  "id": "api.billing.create-invoice",
+  "name": "CreateInvoice",
+  "protocol": "http",
+  "method": "POST",
+  "path": "/v1/invoices",
+  "description": "Creates a customer invoice",
+  "request": {
+    "contentType": "application/json",
+    "schema": {
+      "type": "object",
+      "required": ["customerId", "lineItems"],
+      "properties": {
+        "customerId": {
+          "type": "string"
+        },
+        "lineItems": {
+          "type": "array"
+        }
+      }
+    }
+  },
+  "response": {
+    "success": {
+      "status": 201,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "invoiceId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "errors": [
+    {
+      "status": 400,
+      "code": "INVALID_INPUT"
+    },
+    {
+      "status": 409,
+      "code": "DUPLICATE_REQUEST"
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.api.idempotency-required",
+      "severity": "error"
+    }
+  ],
+  "examples": [
+    {
+      "id": "example.api.create-invoice.http"
+    }
+  ]
+}

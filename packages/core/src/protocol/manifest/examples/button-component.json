@@ -1,0 +1,67 @@
+{
+  "type": "component",
+  "id": "ui.button",
+  "name": "Button",
+  "package": "@acme/ui",
+  "import": "@acme/ui",
+  "description": "Primary action trigger component",
+  "category": "input",
+  "intendedUsage": ["Form submission", "Primary call to action"],
+  "whenToUse": ["User must trigger an immediate action"],
+  "whenNotToUse": ["Navigating to another route without side effects"],
+  "alternatives": [
+    {
+      "type": "component",
+      "name": "LinkButton",
+      "package": "@acme/ui"
+    }
+  ],
+  "props": [
+    {
+      "name": "variant",
+      "type": "primary | secondary | ghost",
+      "required": false,
+      "default": "primary"
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "required": false,
+      "default": false
+    }
+  ],
+  "variants": [
+    {
+      "name": "primary",
+      "description": "High emphasis action"
+    }
+  ],
+  "states": [
+    {
+      "name": "loading",
+      "description": "Action is currently in progress"
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.ui.no-native-button",
+      "severity": "error"
+    }
+  ],
+  "examples": [
+    {
+      "id": "example.ui.button.primary"
+    }
+  ],
+  "antiExamples": [
+    {
+      "title": "Do not use native HTML button in design system surfaces",
+      "language": "tsx",
+      "code": "<button>Save</button>"
+    }
+  ],
+  "deprecated": false,
+  "versionConstraints": {
+    "minVersion": "1.4.0"
+  }
+}

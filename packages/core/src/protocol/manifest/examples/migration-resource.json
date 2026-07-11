@@ -1,0 +1,31 @@
+{
+  "type": "migration",
+  "id": "migration.button.rename-kind-to-variant",
+  "name": "Button prop rename",
+  "from": "1.x",
+  "to": "2.0",
+  "reason": "Unify naming across all UI components",
+  "steps": [
+    {
+      "order": 1,
+      "title": "Rename prop",
+      "description": "Replace kind with variant in Button usages"
+    },
+    {
+      "order": 2,
+      "title": "Validate allowed values",
+      "description": "Map old values to new variant values"
+    }
+  ],
+  "automatedHints": [
+    "Find: <Button kind=...>",
+    "Replace: <Button variant=...>"
+  ],
+  "relatedResources": [
+    {
+      "type": "component",
+      "id": "ui.button",
+      "name": "Button"
+    }
+  ]
+}

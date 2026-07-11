@@ -1,0 +1,8 @@
+{
+  "name": "aps-governance-conflicting-evidence-fixture",
+  "version": "1.0.0",
+  "aps": {
+    "version": 1,
+    "manifest": "./dist/knowledge/manifest.json"
+  }
+}

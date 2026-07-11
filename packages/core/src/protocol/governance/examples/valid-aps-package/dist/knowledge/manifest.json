@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "resources": [
+    {
+      "type": "rule",
+      "id": "acme.platform.rule.reactqueryusage",
+      "name": "React Query Usage",
+      "description": "Use React Query for all server state",
+      "metadata": {
+        "governance": {
+          "authority": "policy",
+          "applicability": {
+            "framework": ["react"],
+            "layer": ["frontend"]
+          },
+          "fields": {
+            "description": {
+              "authority": "policy",
+              "selectedEvidenceId": "ev-1",
+              "evidence": [
+                {
+                  "evidenceId": "ev-1",
+                  "sourceType": "architecture-policy",
+                  "sourceRef": "docs/policies/frontend.md#react-query",
+                  "extractedAt": "2025-01-01T00:00:00.000Z",
+                  "confidence": "high",
+                  "authority": "policy",
+                  "applicability": {
+                    "framework": ["react"],
+                    "layer": ["frontend"]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "governance": {
+      "retiredResourceIds": [
+          "acme.platform.rule.legacyfetch"
+      ]
+    }
+  }
+}

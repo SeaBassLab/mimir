@@ -1,0 +1,111 @@
+{
+  "components": [
+    {
+      "type": "component",
+      "id": "acme.existingaps.component.modal",
+      "name": "Modal",
+      "package": "@acme/existing-aps",
+      "import": "Modal",
+      "description": "",
+      "props": {
+        "title": {
+          "name": "title",
+          "type": "string",
+          "required": true
+        }
+      },
+      "variants": [],
+      "whenToUse": [],
+      "whenNotToUse": [],
+      "governance": {
+        "fields": {
+          "id": {
+            "evidence": [
+              {
+                "sourceType": "package",
+                "sourceRef": "package.json",
+                "confidence": "high"
+              }
+            ]
+          },
+          "name": {
+            "evidence": [
+              {
+                "sourceType": "typescript",
+                "sourceRef": "src/Modal.ts",
+                "confidence": "high"
+              }
+            ]
+          },
+          "package": {
+            "evidence": [
+              {
+                "sourceType": "package",
+                "sourceRef": "package.json",
+                "confidence": "high"
+              }
+            ]
+          },
+          "import": {
+            "evidence": [
+              {
+                "sourceType": "typescript",
+                "sourceRef": "src/Modal.ts",
+                "confidence": "high"
+              }
+            ]
+          },
+          "description": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'description'"
+              }
+            ]
+          },
+          "props": {
+            "evidence": [
+              {
+                "sourceType": "typescript",
+                "sourceRef": "src/Modal.ts",
+                "confidence": "high"
+              }
+            ]
+          },
+          "variants": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'variants'"
+              }
+            ]
+          },
+          "whenToUse": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'whenToUse'"
+              }
+            ]
+          },
+          "whenNotToUse": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'whenNotToUse'"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

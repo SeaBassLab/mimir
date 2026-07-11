@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "resources": [
+    {
+      "type": "service",
+      "id": "acme.platform.service.backendtimeouts",
+      "name": "Backend Request Timeouts",
+      "description": "All outbound backend calls must set timeout",
+      "metadata": {
+        "governance": {
+          "authority": "policy",
+          "fields": {
+            "description": {
+              "authority": "policy",
+              "evidence": []
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "components": [
+    {
+      "type": "component",
+      "id": "acme.platform.component.button",
+      "name": "Button",
+      "description": "Primary action button",
+      "package": "@acme/ui",
+      "import": "Button",
+      "whenToUse": ["Primary actions"],
+      "whenNotToUse": ["Inline text links"]
+    }
+  ],
+  "rules": [
+    {
+      "type": "rule",
+      "id": "acme.platform.rule.preferqueryhooks",
+      "name": "Prefer Query Hooks",
+      "description": "Use query hooks for server data",
+      "severity": "high",
+      "scope": "frontend",
+      "appliesTo": ["react"]
+    }
+  ],
+  "examples": [
+    {
+      "type": "example",
+      "id": "acme.platform.example.buttonprimary",
+      "name": "Button Primary",
+      "description": "Primary button usage",
+      "code": "<Button variant=\"primary\">Save</Button>",
+      "imports": ["import { Button } from '@acme/ui'"],
+      "relatedResources": ["acme.platform.component.button"]
+    }
+  ]
+}

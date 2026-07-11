@@ -1,0 +1,116 @@
+{
+  "components": [
+    {
+      "type": "component",
+      "id": "acme.missingmetadata.component.input",
+      "name": "Input",
+      "package": "@acme/missing-metadata",
+      "import": "Input",
+      "description": "",
+      "props": {
+        "placeholder": {
+          "name": "placeholder",
+          "type": "string",
+          "required": false
+        },
+        "value": {
+          "name": "value",
+          "type": "string",
+          "required": true
+        }
+      },
+      "variants": [],
+      "whenToUse": [],
+      "whenNotToUse": [],
+      "governance": {
+        "fields": {
+          "id": {
+            "evidence": [
+              {
+                "sourceType": "package",
+                "sourceRef": "package.json",
+                "confidence": "high"
+              }
+            ]
+          },
+          "name": {
+            "evidence": [
+              {
+                "sourceType": "typescript",
+                "sourceRef": "src/Input.ts",
+                "confidence": "high"
+              }
+            ]
+          },
+          "package": {
+            "evidence": [
+              {
+                "sourceType": "package",
+                "sourceRef": "package.json",
+                "confidence": "high"
+              }
+            ]
+          },
+          "import": {
+            "evidence": [
+              {
+                "sourceType": "typescript",
+                "sourceRef": "src/Input.ts",
+                "confidence": "high"
+              }
+            ]
+          },
+          "description": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'description'"
+              }
+            ]
+          },
+          "props": {
+            "evidence": [
+              {
+                "sourceType": "typescript",
+                "sourceRef": "src/Input.ts",
+                "confidence": "high"
+              }
+            ]
+          },
+          "variants": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'variants'"
+              }
+            ]
+          },
+          "whenToUse": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'whenToUse'"
+              }
+            ]
+          },
+          "whenNotToUse": {
+            "evidence": [
+              {
+                "sourceType": "human",
+                "sourceRef": "missing",
+                "confidence": "low",
+                "note": "Missing human-authored source for 'whenNotToUse'"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "mimir",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reference implementation of the APS Protocol",
+  "license": "MIT",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "start": "pnpm --filter @mimir/cli start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SeaBassLab/mimir.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SeaBassLab/mimir/issues"
+  },
+  "homepage": "https://github.com/SeaBassLab/mimir#readme"
+}
