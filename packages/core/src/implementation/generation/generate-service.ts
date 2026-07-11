@@ -1,5 +1,6 @@
 import path from "node:path";
 import { ensureDir, fileExists, readJson, writeJson } from "../io/fs";
+import { isObject } from "../io/json";
 import { validateApsManifest } from "../../protocol/compatibility";
 import { validateGovernance } from "../../protocol/governance";
 import { extractReadmeFacts } from "./extractors/readme-extractor";
@@ -16,6 +17,8 @@ type PackageJson = {
 type GenerateOptions = {
   force?: boolean;
 };
+
+const APS_MANIFEST_RELATIVE_PATH = "./dist/aps/manifest.json";
 
 function hasHumanMetadata(component: GeneratedComponentResource): boolean {
   return component.description.trim() !== "" && component.whenToUse.length > 0 && component.whenNotToUse.length > 0;
@@ -36,6 +39,54 @@ async function readPackageName(cwd: string): Promise<string> {
   return packageJson.name;
 }
 
+async function ensureProviderDiscoverability(cwd: string): Promise<string[]> {
+  const warnings: string[] = [];
+  const packageJsonPath = path.join(cwd, "package.json");
+  const packageJson = await readJson<Record<string, unknown>>(packageJsonPath);
+
+  let changed = false;
+
+  if (!isObject(packageJson.aps)) {
+    packageJson.aps = {};
+    changed = true;
+  }
+
+  const aps = packageJson.aps as Record<string, unknown>;
+  if (aps.version === undefined) {
+    aps.version = 1;
+    changed = true;
+    warnings.push("APS config version was missing and has been set to 1.");
+  }
+
+  if (aps.manifest !== APS_MANIFEST_RELATIVE_PATH) {
+    const previous = typeof aps.manifest === "string" ? aps.manifest : "(not set)";
+    aps.manifest = APS_MANIFEST_RELATIVE_PATH;
+    changed = true;
+    warnings.push(
+      `APS manifest path updated from '${previous}' to '${APS_MANIFEST_RELATIVE_PATH}' for consistency with generated resources.`
+    );
+  }
+
+  if (isObject(packageJson.exports)) {
+    const exportsMap = packageJson.exports as Record<string, unknown>;
+    if (exportsMap["./package.json"] !== "./package.json") {
+      exportsMap["./package.json"] = "./package.json";
+      changed = true;
+      warnings.push("Added exports['./package.json'] for provider discovery compatibility.");
+    }
+  } else if (packageJson.exports !== undefined) {
+    warnings.push(
+      "Package exports is not an object. Could not add exports['./package.json']; configure it manually for discovery compatibility."
+    );
+  }
+
+  if (changed) {
+    await writeJson(packageJsonPath, packageJson);
+  }
+
+  return warnings;
+}
+
 export async function generateApsFromEvidence(
   cwd: string,
   options: GenerateOptions = {}
@@ -51,6 +102,8 @@ export async function generateApsFromEvidence(
       "APS resources already exist in dist/aps. Re-run with --force to replace existing generated resources."
     );
   }
+
+  const discoverabilityWarnings = await ensureProviderDiscoverability(cwd);
 
   await ensureDir(outputDir);
 
@@ -68,7 +121,7 @@ export async function generateApsFromEvidence(
 
   const output: GenerateOutput = {
     components,
-    warnings: [...exampleResult.warnings],
+    warnings: [...exampleResult.warnings, ...discoverabilityWarnings],
     missingHumanMetadata: toUniqueSorted(
       components
         .filter((component) => !hasHumanMetadata(component))
