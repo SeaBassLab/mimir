@@ -5,7 +5,7 @@ import { isObject } from "../io/json";
 import { extractResourceCounts } from "../query/resource-summary";
 import { resolveApsPackageConfig, type ApsPackageConfig } from "./package-config";
 
-const DEFAULT_MANIFEST_PATH = "./dist/knowledge/manifest.json";
+const DEFAULT_MANIFEST_PATH = "./dist/aps/manifest.json";
 
 export type DiscoveredProvider = {
   name: string;

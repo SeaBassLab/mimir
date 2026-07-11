@@ -12,7 +12,7 @@ type PrepareInitResult = {
 
 const APS_DEFAULT_CONFIG = {
   version: 1,
-  manifest: "./dist/knowledge/manifest.json"
+  manifest: "./dist/aps/manifest.json"
 };
 
 export async function prepareApsConfig(cwd: string): Promise<PrepareInitResult> {

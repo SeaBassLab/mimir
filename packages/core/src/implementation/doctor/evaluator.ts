@@ -55,7 +55,7 @@ async function loadCurrentProvider(cwd: string) {
   const manifestRelPath =
     typeof config.config.manifest === "string"
       ? config.config.manifest
-      : "./dist/knowledge/manifest.json";
+      : "./dist/aps/manifest.json";
   const manifestPath = path.resolve(cwd, manifestRelPath);
 
   let manifest: Record<string, unknown> | null = null;

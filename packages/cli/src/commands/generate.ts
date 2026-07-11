@@ -55,6 +55,12 @@ export function registerGenerateCommand(program: Command): void {
           }
 
           if (report.missingHumanMetadata.length > 0) {
+            warn("human metadata is incomplete for some components");
+            console.log("Expected human metadata fields: description, whenToUse, whenNotToUse.");
+            console.log("Current source behavior:");
+            console.log("- description: extracted from README.md component sections when available");
+            console.log("- whenToUse/whenNotToUse: not auto-extracted in v1 (manual enrichment required)");
+            console.log(`Update generated resource file: ${path.join(report.outputDir, "components.json")}`);
             console.log("Missing human metadata for components:");
             for (const name of report.missingHumanMetadata) {
               console.log(`- ${name}`);
