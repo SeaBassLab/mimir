@@ -22,6 +22,7 @@ export type { ApsSchemaVersion, ApsManifest, ApsLegacyResourceEntry } from "./ma
 export type { ApsMigrationResource, ApsMigrationStep } from "./migration-resource";
 export type { ApsModelField, ApsModelResource } from "./model-resource";
 export type { ApsPatternResource } from "./pattern-resource";
+export { APS_RESOURCE_TYPES } from "./resource";
 export type { ApsResource, ApsResourceType } from "./resource";
 export type { ApsRuleResource, ApsRuleTarget } from "./rule-resource";
 export type { ApsServiceResource } from "./service-resource";

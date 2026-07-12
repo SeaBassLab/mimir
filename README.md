@@ -133,6 +133,11 @@ Primary action control for submitting user intent.
 - Do not use for navigation; use a link instead.
 ```
 
+Non-component knowledge is projected to `.agents/aps/resources.md`, grouped by
+kind with its import, public API summary, React patterns, relationships, and
+authored usage guidance. Every adapter points to `.agents/aps/index.md`, which
+references both files.
+
 The author's intent now travels continuously from version-controlled source to
 the context read by consumer agents:
 

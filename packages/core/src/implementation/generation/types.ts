@@ -1,4 +1,5 @@
 import type { ExtractedProp } from "../contracts/resource";
+import type { ApsResourceType } from "../../protocol/manifest";
 
 export type EvidenceConfidence = "high" | "medium" | "low";
 
@@ -30,8 +31,29 @@ export type GeneratedComponentResource = {
   };
 };
 
+export type GeneratedKnowledgeResource = {
+  type: ApsResourceType;
+  id: string;
+  name: string;
+  package: string;
+  import: string;
+  description: string;
+  whenToUse: string[];
+  whenNotToUse: string[];
+  relatedResources: Array<{ id: string; relationship: string }>;
+  metadata: {
+    api?: unknown;
+    examples?: unknown[];
+    react?: unknown;
+  };
+  governance: {
+    fields: Record<string, { evidence: FieldEvidence[] }>;
+  };
+};
+
 export type GenerateOutput = {
   components: GeneratedComponentResource[];
+  resources: GeneratedKnowledgeResource[];
   warnings: string[];
   missingHumanMetadata: string[];
 };

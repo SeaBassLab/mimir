@@ -192,7 +192,7 @@ const classificationRules: ClassificationRule[] = [
       if (
         signals.hasRuntimeValue &&
         (
-          hasWord(lowerName, "token") ||
+          /tokens?$/.test(lowerName) ||
           lowerName === "palette" ||
           lowerName === "colors" ||
           lowerName === "spacing" ||

@@ -190,7 +190,7 @@ mimir generate
 # Generated:
 # ✓ manifest.json
 # ✓ components.json
-# ✓ rules.json
+# ✓ resources.json
 #
 # Provider ready for validation.
 
@@ -256,8 +256,7 @@ dist/
   aps/
     manifest.json
     components.json
-    rules.json
-    examples.json
+    resources.json
 ```
 
 Minimal APS Manifest example:
@@ -284,16 +283,13 @@ Provider project:
 
 ```text
 my-ui-library/
-  aps/
-    knowledge/
-      components/
-        acme.ui.component.button.yaml
+  src/
+    Button.mimir.yaml
   dist/
     aps/
       manifest.json
       components.json
-      rules.json
-      examples.json
+      resources.json
 ```
 
 Consumer project:
@@ -374,6 +370,8 @@ Generated
 ✓ AGENTS.md
 ✓ copilot-instructions.md
 ✓ cursor-rules.mdc
+✓ .agents/aps/components.md
+✓ .agents/aps/resources.md
 ```
 
 Discovery example:

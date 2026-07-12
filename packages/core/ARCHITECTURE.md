@@ -70,6 +70,12 @@ The graph is never persisted or serialized. Derived knowledge such as resolved
 design-token values and mechanical import/export edges can exist in memory
 without becoming part of the descriptor or APS contract.
 
+For exported objects, the persistence policy keeps their stable public surface
+in `auto.api.members` (access paths and widened types), not their resolved
+literal values. Extraction is bounded to four levels and 200 members per
+resource so palettes, spacing scales, breakpoints, and public constant
+namespaces remain useful without unbounded descriptor growth.
+
 Providers declare the predicates they require and produce. The engine validates
 those dependencies while preserving one shared workspace.
 
@@ -87,12 +93,16 @@ retention decisions: it creates missing resources, writes the policy projection
 to `auto`, and preserves `human` content.
 During generation, `generate` compiles descriptor resources only and does not
 perform resource discovery heuristics or execute authoring providers.
+Components remain in the legacy-compatible `components` section and
+`components.json`. Other semantic kinds are emitted with their real type in the
+additive `resources` section and `resources.json`.
 
 Authoring never overwrites human fields. The
 canonical component resource ID is shared with generation through
 `src/implementation/resource-identity.ts`, preventing identity drift between
 the descriptor identities and generated APS Manifest resources.
 
-Synchronization reads the enriched APS Manifest and renders component semantics in
-the shared `.agents/aps/components.md` context. Adapters reference that shared
-context rather than implementing provider-specific knowledge projection.
+Synchronization reads the enriched APS Manifest and renders component semantics
+in `.agents/aps/components.md` plus typed semantic resources in
+`.agents/aps/resources.md`. Adapters reference the shared `.agents/aps/index.md`
+instead of implementing provider-specific knowledge projection.

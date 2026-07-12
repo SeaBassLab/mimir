@@ -3,6 +3,7 @@ import ts from "typescript";
 import type {
   ExtractedComponentFact,
   ExtractedProp,
+  PublicApiMember,
   PublicApiProp,
   PublicApiTypeDescriptor,
   PublicComponentApi
@@ -471,6 +472,64 @@ function buildEmptyApi(): PublicComponentApi {
   };
 }
 
+function appendMemberPath(parent: string, name: string): string {
+  if (/^\d+$/.test(name)) {
+    return `${parent}[${name}]`;
+  }
+  if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)) {
+    return parent ? `${parent}.${name}` : name;
+  }
+  return `${parent}[${JSON.stringify(name)}]`;
+}
+
+function extractObjectMembers(
+  checker: ts.TypeChecker,
+  symbol: ts.Symbol,
+  declaration: ts.Declaration,
+  maxDepth = 4,
+  maxMembers = 200
+): PublicApiMember[] {
+  const rootType = checker.getTypeOfSymbolAtLocation(symbol, declaration);
+  if (checker.getSignaturesOfType(rootType, ts.SignatureKind.Call).length > 0) {
+    return [];
+  }
+
+  const members: PublicApiMember[] = [];
+  const activeTypes = new Set<ts.Type>();
+  const visit = (type: ts.Type, parent: string, depth: number): void => {
+    if (members.length >= maxMembers || activeTypes.has(type)) return;
+    activeTypes.add(type);
+    for (const property of checker.getPropertiesOfType(type)) {
+      if (members.length >= maxMembers) break;
+      const propertyDeclaration = property.valueDeclaration ?? property.declarations?.[0] ?? declaration;
+      const propertyType = checker.getTypeOfSymbolAtLocation(property, propertyDeclaration);
+      const path = appendMemberPath(parent, property.getName());
+      const nested =
+        depth < maxDepth &&
+        (propertyType.flags & ts.TypeFlags.Object) !== 0 &&
+        checker.getSignaturesOfType(propertyType, ts.SignatureKind.Call).length === 0 &&
+        !checker.isArrayType(propertyType) &&
+        checker.getPropertiesOfType(propertyType).length > 0;
+
+      if (nested) {
+        visit(propertyType, path, depth + 1);
+        continue;
+      }
+
+      const description = ts.displayPartsToString(property.getDocumentationComment(checker)).trim();
+      members.push({
+        path,
+        type: serializeType(checker, checker.getBaseTypeOfLiteralType(propertyType)),
+        description: description || undefined
+      });
+    }
+    activeTypes.delete(type);
+  };
+
+  visit(rootType, "", 1);
+  return members.sort((a, b) => a.path.localeCompare(b.path));
+}
+
 function buildLegacyProps(publicProps: PublicApiProp[]): Record<string, ExtractedProp> {
   const props: Record<string, ExtractedProp> = {};
 
@@ -521,10 +580,14 @@ export async function extractTypeScriptPublicApi(
 
     const { propsType, declaration } = extractPropsTypeForComponent(checker, exportSymbol);
     if (!propsType || !declaration) {
+      const api = buildEmptyApi();
+      if (declaration) {
+        api.members = extractObjectMembers(checker, exportSymbol, declaration);
+      }
       result.set(componentKey(component.filePath, component.name), {
         name: component.name,
         filePath: component.filePath,
-        api: buildEmptyApi(),
+        api,
         props: {}
       });
       continue;

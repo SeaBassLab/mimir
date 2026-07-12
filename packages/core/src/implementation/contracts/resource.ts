@@ -71,10 +71,17 @@ export type PublicApiProp = {
 
 export type PublicComponentApi = {
   props: PublicApiProp[];
+  members?: PublicApiMember[];
   events: unknown[];
   slots: unknown[];
   methods: unknown[];
   refs: unknown[];
+};
+
+export type PublicApiMember = {
+  path: string;
+  type: PublicApiTypeDescriptor;
+  description?: string;
 };
 
 export type ExtractedComponentFact = {

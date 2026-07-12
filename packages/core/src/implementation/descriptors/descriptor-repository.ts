@@ -13,19 +13,9 @@ import type {
   ResourceClassification
 } from "../contracts/resource";
 import { discoverDescriptorFiles } from "./descriptor-discovery";
+import { APS_RESOURCE_TYPES } from "../../protocol/manifest";
 
-const SUPPORTED_KINDS = new Set([
-  "component",
-  "function",
-  "api",
-  "service",
-  "model",
-  "event",
-  "rule",
-  "example",
-  "pattern",
-  "migration"
-]);
+const SUPPORTED_KINDS: ReadonlySet<string> = new Set(APS_RESOURCE_TYPES);
 
 type RawDescriptorResource = {
   schemaVersion?: unknown;

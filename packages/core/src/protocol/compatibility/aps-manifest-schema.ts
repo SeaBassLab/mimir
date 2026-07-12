@@ -25,6 +25,8 @@ import {
   type ResourceValidationResult as MigrationValidationResult
 } from "./aps-migration-schema";
 import type { SchemaValidationResult, ValidationIssue } from "./index";
+import { validateApsResource } from "./aps-resource-schema";
+import type { ApsResource } from "../manifest";
 
 const SUPPORTED_VERSIONS = new Set([1]);
 
@@ -93,6 +95,7 @@ function validateResourceList<T>(
 
 export type ApsManifest = {
   version: number;
+  resources?: ApsResource[];
   components?: ApsComponent[];
   rules?: ApsRule[];
   examples?: ApsExample[];
@@ -136,6 +139,7 @@ export function validateApsManifest(value: unknown): SchemaValidationResult<ApsM
   }
 
   const componentsResult = validateResourceList(value.components, "components", validateApsComponent);
+  const resourcesResult = validateResourceList(value.resources, "resources", validateApsResource);
   const rulesResult = validateResourceList(value.rules, "rules", validateApsRule);
   const examplesResult = validateResourceList(value.examples, "examples", validateApsExample);
   const patternsResult = validateResourceList(value.patterns, "patterns", validateApsPattern);
@@ -143,6 +147,7 @@ export function validateApsManifest(value: unknown): SchemaValidationResult<ApsM
 
   errors.push(
     ...componentsResult.errors,
+    ...resourcesResult.errors,
     ...rulesResult.errors,
     ...examplesResult.errors,
     ...patternsResult.errors,
@@ -151,6 +156,7 @@ export function validateApsManifest(value: unknown): SchemaValidationResult<ApsM
 
   warnings.push(
     ...componentsResult.warnings,
+    ...resourcesResult.warnings,
     ...rulesResult.warnings,
     ...examplesResult.warnings,
     ...patternsResult.warnings,
@@ -159,6 +165,7 @@ export function validateApsManifest(value: unknown): SchemaValidationResult<ApsM
 
   validResources.push(
     ...componentsResult.validResources,
+    ...resourcesResult.validResources,
     ...rulesResult.validResources,
     ...examplesResult.validResources,
     ...patternsResult.validResources,
@@ -176,6 +183,7 @@ export function validateApsManifest(value: unknown): SchemaValidationResult<ApsM
 
   const manifest: ApsManifest = {
     version: version as number,
+    resources: resourcesResult.values.length > 0 ? resourcesResult.values : undefined,
     components: componentsResult.values.length > 0 ? componentsResult.values : undefined,
     rules: rulesResult.values.length > 0 ? rulesResult.values : undefined,
     examples: examplesResult.values.length > 0 ? examplesResult.values : undefined,
