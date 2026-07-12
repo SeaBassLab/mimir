@@ -7,7 +7,13 @@
   "packageManager": "pnpm@10.0.0",
   "scripts": {
     "build": "pnpm -r --if-present build",
-    "start": "pnpm --filter @mimir/cli start"
+    "clean": "pnpm -r --if-present clean",
+    "typecheck": "pnpm -r --if-present typecheck",
+
+    "start": "pnpm --filter @mimir/cli start",
+
+    "publish:core": "pnpm --filter @mimir/core publish --access public",
+    "publish:cli": "pnpm --filter @mimir/cli publish --access public"
   },
   "repository": {
     "type": "git",

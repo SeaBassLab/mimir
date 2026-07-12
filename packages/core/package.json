@@ -1,6 +1,6 @@
 {
   "name": "@mimir/core",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Reusable core services for the Mimir APS implementation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,9 +12,23 @@
   "scripts": {
     "build": "tsc -p tsconfig.json"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.10.1",
     "typescript": "^5.7.2"
-  }
+  },
+  "keywords": [
+    "aps",
+    "protocol",
+    "software-knowledge"
+  ]
 }
