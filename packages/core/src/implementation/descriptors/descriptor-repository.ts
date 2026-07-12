@@ -20,6 +20,8 @@ const SUPPORTED_KINDS = new Set([
 ]);
 
 type RawDescriptorResource = {
+  schemaVersion?: unknown;
+  resources?: unknown;
   kind?: unknown;
   name?: unknown;
   id?: unknown;
@@ -76,26 +78,26 @@ function readPropsMap(value: unknown, field: string, sourceRef: string): Record<
 function readResource(
   value: unknown,
   sourceRef: string,
-  index: number
+  resourcePath: string
 ): MimirResourceDescriptor | null {
   if (!isObject(value)) {
-    throw new Error(`${sourceRef}: resources[${index}] must be an object`);
+    throw new Error(`${sourceRef}: ${resourcePath} must be an object`);
   }
 
   const resource = value as RawDescriptorResource;
 
   if (typeof resource.kind !== "string" || resource.kind.trim() === "") {
-    throw new Error(`${sourceRef}: resources[${index}].kind must be a non-empty string`);
+    throw new Error(`${sourceRef}: ${resourcePath}.kind must be a non-empty string`);
   }
 
   if (typeof resource.name !== "string" || resource.name.trim() === "") {
-    throw new Error(`${sourceRef}: resources[${index}].name must be a non-empty string`);
+    throw new Error(`${sourceRef}: ${resourcePath}.name must be a non-empty string`);
   }
 
   const kind = resource.kind.trim().toLowerCase();
   if (!SUPPORTED_KINDS.has(kind)) {
     throw new Error(
-      `${sourceRef}: resources[${index}].kind '${resource.kind}' is not supported by the descriptor contract`
+      `${sourceRef}: ${resourcePath}.kind '${resource.kind}' is not supported by the descriptor contract`
     );
   }
 
@@ -185,19 +187,29 @@ export async function loadMimirDescriptors(cwd: string): Promise<MimirDescriptor
     }
 
     const schemaVersion = raw.schemaVersion;
-    if (schemaVersion !== 1) {
-      warnings.push(`${sourceRef}: schemaVersion must be 1`);
+    if (schemaVersion === 1) {
+      if (!Array.isArray(raw.resources)) {
+        warnings.push(`${sourceRef}: resources must be an array for schemaVersion 1`);
+        continue;
+      }
+
+      for (let index = 0; index < raw.resources.length; index += 1) {
+        try {
+          const resource = readResource(raw.resources[index], sourceRef, `resources[${index}]`);
+          if (resource) {
+            resources.push(resource);
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          warnings.push(message);
+        }
+      }
       continue;
     }
 
-    if (!Array.isArray(raw.resources)) {
-      warnings.push(`${sourceRef}: resources must be an array`);
-      continue;
-    }
-
-    for (let index = 0; index < raw.resources.length; index += 1) {
+    if (schemaVersion === 2) {
       try {
-        const resource = readResource(raw.resources[index], sourceRef, index);
+        const resource = readResource(raw, sourceRef, "resource");
         if (resource) {
           resources.push(resource);
         }
@@ -205,7 +217,10 @@ export async function loadMimirDescriptors(cwd: string): Promise<MimirDescriptor
         const message = error instanceof Error ? error.message : String(error);
         warnings.push(message);
       }
+      continue;
     }
+
+    warnings.push(`${sourceRef}: schemaVersion must be 1 or 2`);
   }
 
   return {

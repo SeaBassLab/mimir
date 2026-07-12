@@ -3,14 +3,35 @@ import { runGeneration } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import path from "node:path";
 import {
+  errorWithResolution,
   errorMessage,
   EXIT_CODES,
+  info,
   printJson,
   setExitCode,
   success,
   warn
 } from "../dx/output/cli-output";
 import { isDryRun, shouldEmitJson } from "../dx/runtime/options";
+
+function isNoDescriptorsFoundError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "NO_DESCRIPTORS_FOUND"
+  );
+}
+
+function printNoDescriptorsMessage(): void {
+  console.log("No descriptors found.");
+  console.log("");
+  console.log("Run:");
+  console.log("    mimir author");
+  console.log("");
+  console.log("Then:");
+  console.log("    mimir generate");
+}
 
 export function registerGenerateCommand(program: Command): void {
   const command = program
@@ -19,6 +40,7 @@ export function registerGenerateCommand(program: Command): void {
     .option("--json", "output machine-readable JSON")
     .option("--force", "replace existing generated resources in dist/aps")
     .action(async (options: { json?: boolean; force?: boolean }) => {
+      const startedAt = Date.now();
       try {
         if (isDryRun()) {
           const payload = {
@@ -39,14 +61,26 @@ export function registerGenerateCommand(program: Command): void {
         const report = await runGeneration(process.cwd(), {
           force: options.force
         });
+        const durationMs = Date.now() - startedAt;
 
         if (shouldEmitJson(options.json)) {
-          printJson({ command: "generate", ok: report.validate.valid, report });
+          printJson({
+            command: "generate",
+            ok: report.validate.valid && Boolean(report.governance?.valid ?? true),
+            durationMs,
+            report
+          });
         } else {
-          success(`generated APS resources in ${report.outputDir}`);
-          console.log(`- generated resources: ${report.generatedResources}`);
-          console.log(`- validation valid: ${report.validate.valid}`);
-          console.log(`- governance valid: ${report.governance?.valid ?? false}`);
+          success("generation complete");
+          info(`Descriptors compiled: ${report.descriptorsCompiled}`);
+          info(`Resources generated: ${report.generatedResources}`);
+          info(
+            `Validation: ${report.validate.valid ? "PASS" : "FAIL"} (${report.validate.errors.length} errors, ${report.validate.warnings.length} warnings)`
+          );
+          info(
+            `Governance: ${report.governance?.valid ? "PASS" : "FAIL"} (${report.governance?.errors.length ?? 0} errors, ${report.governance?.warnings.length ?? 0} warnings)`
+          );
+          info(`Total time: ${durationMs}ms`);
 
           if (report.warnings.length > 0) {
             for (const warning of report.warnings) {
@@ -80,15 +114,37 @@ export function registerGenerateCommand(program: Command): void {
           }
         }
 
-        if (!report.validate.valid) {
+        if (!report.validate.valid || !Boolean(report.governance?.valid ?? true)) {
           setExitCode(EXIT_CODES.GENERAL_ERROR);
         }
       } catch (error) {
+        if (isNoDescriptorsFoundError(error)) {
+          if (shouldEmitJson(options.json)) {
+            printJson({
+              command: "generate",
+              ok: false,
+              error: {
+                what: "No descriptors found.",
+                why: "Generation compiles from *.mimir.yaml descriptors and none were discovered.",
+                howToFix: "Run 'mimir author' and then 'mimir generate'."
+              }
+            });
+          } else {
+            printNoDescriptorsMessage();
+          }
+          setExitCode(EXIT_CODES.GENERAL_ERROR);
+          return;
+        }
+
         const message = error instanceof Error ? error.message : String(error);
         if (shouldEmitJson(options.json)) {
           printJson({ command: "generate", ok: false, error: message });
         } else {
-          errorMessage(`generate failed: ${message}`);
+          errorWithResolution({
+            what: "Generate failed.",
+            why: message,
+            howToFix: "Fix the reported issue and run 'mimir generate' again. If output exists already, use '--force' to replace it."
+          });
         }
         setExitCode(EXIT_CODES.GENERAL_ERROR);
       }

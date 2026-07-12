@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { runContextWorkflow } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
-  errorMessage,
+  errorWithResolution,
   EXIT_CODES,
   printJson,
   setExitCode,
@@ -49,7 +49,11 @@ export function registerContextCommand(program: Command): void {
         if (shouldEmitJson(options.json)) {
           printJson({ command: "context", ok: false, error: message });
         } else {
-          errorMessage(`context generation failed: ${message}`);
+          errorWithResolution({
+            what: "Context generation failed.",
+            why: message,
+            howToFix: "Fix the reported configuration/discovery issue and run 'mimir context' again."
+          });
         }
         setExitCode(EXIT_CODES.GENERAL_ERROR);
       }

@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { runDoctorAssessment } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
+  errorWithResolution,
   errorMessage,
   EXIT_CODES,
   printJson,
@@ -69,7 +70,11 @@ export function registerDoctorCommand(program: Command): void {
         if (shouldEmitJson(options.json)) {
           printJson({ command: "doctor", ok: false, error: message });
         } else {
-          errorMessage(`doctor failed: ${message}`);
+          errorWithResolution({
+            what: "Doctor failed.",
+            why: message,
+            howToFix: "Resolve the reported provider/discovery issue and run 'mimir doctor' again."
+          });
         }
         setExitCode(EXIT_CODES.GENERAL_ERROR);
       }

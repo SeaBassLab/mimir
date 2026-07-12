@@ -2,24 +2,26 @@ import { Command } from "commander";
 import { runAuthoringWorkflow } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
+  errorWithResolution,
   errorMessage,
   EXIT_CODES,
+  info,
   printJson,
   setExitCode,
   success,
   warn
 } from "../dx/output/cli-output";
-import { isDryRun, shouldEmitJson } from "../dx/runtime/options";
+import { isDryRun, isVerbose, shouldEmitJson } from "../dx/runtime/options";
 
 function printFiles(label: string, files: string[]): void {
-  console.log(`${label}:`);
+  info(`${label}:`);
   if (files.length === 0) {
-    console.log("- none");
+    info("- none");
     return;
   }
 
   for (const file of files) {
-    console.log(`- ${file}`);
+    info(`- ${file}`);
   }
 }
 
@@ -56,24 +58,38 @@ export function registerAuthorCommand(program: Command): void {
         }
 
         if (report.dryRun) {
-          success("dry-run: authoring sync plan ready");
-          console.log(`Discovered resources: ${report.discoveredResources}`);
-          printFiles("Would write", report.plannedFiles);
+          success("descriptor sync plan ready");
+          info(`Resources discovered: ${report.discoveredResources}`);
+          info(`Created: ${report.createdFiles.length}`);
+          info(`Updated: ${report.updatedFiles.length}`);
+          info(`Existing: ${report.existingFiles.length}`);
+          info(`Orphans: ${report.orphanedResources.length}`);
+          info(`Planned writes: ${report.plannedFiles.length}`);
         } else {
-          success("descriptor sync complete");
-          console.log(`Discovered resources: ${report.discoveredResources}`);
-          printFiles("Created", report.createdFiles);
-          printFiles("Updated", report.updatedFiles);
+          success("Descriptor sync complete");
+          info(`Resources discovered: ${report.discoveredResources}`);
+          info(`Created: ${report.createdFiles.length}`);
+          info(`Updated: ${report.updatedFiles.length}`);
+          info(`Existing: ${report.existingFiles.length}`);
+          info(`Orphans: ${report.orphanedResources.length}`);
         }
 
-        printFiles("Existing", report.existingFiles);
+        if (isVerbose()) {
+          if (report.dryRun) {
+            printFiles("Would write", report.plannedFiles);
+          } else {
+            printFiles("Created", report.createdFiles);
+            printFiles("Updated", report.updatedFiles);
+            printFiles("Existing", report.existingFiles);
+          }
 
-        if (report.orphanedResources.length > 0) {
-          printFiles("Orphaned", report.orphanedResources);
-        }
+          if (report.orphanedResources.length > 0) {
+            printFiles("Orphaned", report.orphanedResources);
+          }
 
-        if (report.deletedOrphans.length > 0) {
-          printFiles("Deleted orphans", report.deletedOrphans);
+          if (report.deletedOrphans.length > 0) {
+            printFiles("Deleted orphans", report.deletedOrphans);
+          }
         }
 
         if (report.warnings.length > 0) {
@@ -82,14 +98,21 @@ export function registerAuthorCommand(program: Command): void {
           }
         }
 
-        console.log("");
-        console.log("Human fields were preserved. Only auto fields were synchronized.");
+        if (report.createdFiles.length > 0 || report.updatedFiles.length > 0) {
+          console.log("");
+          console.log("Run:");
+          console.log("    mimir generate");
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         if (shouldEmitJson(options.json)) {
           printJson({ command: "author", ok: false, error: message });
         } else {
-          errorMessage(`author failed: ${message}`);
+          errorWithResolution({
+            what: "Author failed.",
+            why: message,
+            howToFix: "Fix the descriptor/source issue reported and run 'mimir author' again."
+          });
         }
         setExitCode(EXIT_CODES.GENERAL_ERROR);
       }

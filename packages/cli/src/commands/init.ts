@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { prepareApsConfig } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
-  errorMessage,
+  errorWithResolution,
   EXIT_CODES,
   printJson,
   setExitCode,
@@ -63,7 +63,11 @@ export function registerInitCommand(program: Command): void {
         if (shouldEmitJson(options.json)) {
           printJson({ command: "init", ok: false, error: message });
         } else {
-          errorMessage(`init failed: ${message}`);
+          errorWithResolution({
+            what: "Init failed.",
+            why: message,
+            howToFix: "Fix package.json access/format issues and run 'mimir init' again."
+          });
         }
         setExitCode(EXIT_CODES.GENERAL_ERROR);
       }

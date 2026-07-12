@@ -23,6 +23,15 @@ type GenerateOptions = {
   force?: boolean;
 };
 
+export class NoDescriptorsFoundError extends Error {
+  readonly code = "NO_DESCRIPTORS_FOUND";
+
+  constructor() {
+    super("No descriptors found");
+    this.name = "NoDescriptorsFoundError";
+  }
+}
+
 function hasHumanMetadata(component: GeneratedComponentResource): boolean {
   return component.description.trim() !== "" && component.whenToUse.length > 0 && component.whenNotToUse.length > 0;
 }
@@ -103,6 +112,11 @@ export async function compileApsFromDescriptors(
   options: GenerateOptions = {}
 ): Promise<GenerateReport> {
   const packageName = await readPackageName(cwd);
+  const descriptorResult = await loadMimirDescriptors(cwd);
+  if (descriptorResult.descriptorFiles.length === 0) {
+    throw new NoDescriptorsFoundError();
+  }
+
   const outputDir = path.join(cwd, "dist", "aps");
   const manifestPath = path.join(outputDir, "manifest.json");
   const componentsPath = path.join(outputDir, "components.json");
@@ -115,8 +129,6 @@ export async function compileApsFromDescriptors(
   }
 
   await ensureDir(outputDir);
-
-  const descriptorResult = await loadMimirDescriptors(cwd);
   const unsupportedKinds = toUniqueSorted(
     descriptorResult.resources.filter((resource) => resource.kind !== "component").map((resource) => resource.kind)
   );
@@ -131,10 +143,6 @@ export async function compileApsFromDescriptors(
 
   const exampleResult = buildExamplesNotImplemented();
   const descriptorWarnings = [...descriptorResult.warnings];
-
-  if (descriptorResult.descriptorFiles.length === 0) {
-    descriptorWarnings.push("No *.mimir.yaml descriptors found. Run 'mimir author' to scaffold descriptor files.");
-  }
 
   if (unsupportedKinds.length > 0) {
     descriptorWarnings.push(
@@ -167,6 +175,7 @@ export async function compileApsFromDescriptors(
 
   return {
     outputDir,
+    descriptorsCompiled: descriptorResult.descriptorFiles.length,
     generatedResources: output.components.length,
     warnings: output.warnings,
     missingHumanMetadata: output.missingHumanMetadata,

@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { runGovernanceValidation } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
+  errorWithResolution,
   errorMessage,
   EXIT_CODES,
   printJson,
@@ -57,7 +58,11 @@ export function registerGovernanceCommand(program: Command): void {
         if (shouldEmitJson(options.json)) {
           printJson({ command: "governance", ok: false, error: message });
         } else {
-          errorMessage(`governance validation failed: ${message}`);
+          errorWithResolution({
+            what: "Governance validation failed.",
+            why: message,
+            howToFix: "Fix governance issues shown in output and run 'mimir governance' again."
+          });
         }
         setExitCode(EXIT_CODES.GENERAL_ERROR);
       }

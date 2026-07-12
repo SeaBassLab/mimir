@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { runSyncWorkflow } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
-  errorMessage,
+  errorWithResolution,
   EXIT_CODES,
   printJson,
   setExitCode,
@@ -70,7 +70,11 @@ export function registerSyncCommand(program: Command): void {
         if (shouldEmitJson(options.json)) {
           printJson({ command: "sync", ok: false, error: message });
         } else {
-          errorMessage(`sync failed: ${message}`);
+          errorWithResolution({
+            what: "Sync failed.",
+            why: message,
+            howToFix: "Fix adapter/discovery errors and run 'mimir sync' again."
+          });
         }
         setExitCode(EXIT_CODES.GENERAL_ERROR);
       }

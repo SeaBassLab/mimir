@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { runValidation } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
+  errorWithResolution,
   errorMessage,
   EXIT_CODES,
   printJson,
@@ -61,7 +62,11 @@ export function registerValidateCommand(program: Command): void {
         if (shouldEmitJson(options.json)) {
           printJson({ command: "validate", ok: false, error: message });
         } else {
-          errorMessage(`validation failed: ${message}`);
+          errorWithResolution({
+            what: "Validation failed.",
+            why: message,
+            howToFix: "Fix the reported schema/package issues and run 'mimir validate' again."
+          });
         }
         setExitCode(EXIT_CODES.GENERAL_ERROR);
       }

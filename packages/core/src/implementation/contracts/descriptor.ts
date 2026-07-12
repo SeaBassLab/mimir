@@ -1,4 +1,4 @@
-import type { ExtractedProp } from "./resource";
+import type { ExtractedProp, PublicComponentApi, ResourceClassification } from "./resource";
 
 export type MimirResourceDescriptor = {
   kind: string;
@@ -11,6 +11,8 @@ export type MimirResourceDescriptor = {
       public?: boolean;
     };
     props: Record<string, ExtractedProp>;
+    api?: PublicComponentApi;
+    classification?: ResourceClassification;
     variants: string[];
     storyFiles: string[];
   };

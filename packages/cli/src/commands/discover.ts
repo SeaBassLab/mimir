@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { runDiscovery } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
-  errorMessage,
+  errorWithResolution,
   EXIT_CODES,
   printJson,
   setExitCode,
@@ -65,7 +65,11 @@ export function registerDiscoverCommand(program: Command): void {
         if (shouldEmitJson(options.json)) {
           printJson({ command: "discover", ok: false, error: message });
         } else {
-          errorMessage(`discovery failed: ${message}`);
+          errorWithResolution({
+            what: "Discovery failed.",
+            why: message,
+            howToFix: "Fix dependency or manifest resolution issues and run 'mimir discover' again."
+          });
         }
         setExitCode(EXIT_CODES.GENERAL_ERROR);
       }

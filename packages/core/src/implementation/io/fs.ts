@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export async function fileExists(filePath: string): Promise<boolean> {
@@ -51,4 +51,16 @@ export async function readJson<T>(filePath: string): Promise<T> {
 export async function writeJson(filePath: string, data: unknown): Promise<void> {
   const serialized = `${JSON.stringify(data, null, 2)}\n`;
   await writeText(filePath, serialized);
+}
+
+export async function deleteFile(filePath: string): Promise<void> {
+  try {
+    await unlink(filePath);
+  } catch (error) {
+    const fsError = error as NodeJS.ErrnoException;
+    if (fsError.code === "ENOENT") {
+      return;
+    }
+    throw error;
+  }
 }

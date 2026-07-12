@@ -38,6 +38,7 @@ export type GenerateOutput = {
 
 export type GenerateReport = {
   outputDir: string;
+  descriptorsCompiled: number;
   generatedResources: number;
   warnings: string[];
   missingHumanMetadata: string[];

@@ -34,3 +34,7 @@ export function shouldEmitJson(localJson?: boolean): boolean {
 export function isDryRun(): boolean {
   return state.dryRun;
 }
+
+export function isVerbose(): boolean {
+  return state.verbose;
+}

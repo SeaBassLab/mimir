@@ -43,7 +43,7 @@ export function printJson(payload: unknown): void {
 
 export function info(message: string): void {
   if (!getRuntimeOptions().quiet) {
-    console.log(message);
+    console.log(`INFO: ${message}`);
   }
 }
 
@@ -61,6 +61,16 @@ export function success(message: string): void {
 
 export function errorMessage(message: string): void {
   console.error(`ERROR: ${message}`);
+}
+
+export function errorWithResolution(details: {
+  what: string;
+  why: string;
+  howToFix: string;
+}): void {
+  errorMessage(details.what);
+  console.error(`INFO: Why: ${details.why}`);
+  console.error(`INFO: Fix: ${details.howToFix}`);
 }
 
 export function setExitCode(code: number): void {

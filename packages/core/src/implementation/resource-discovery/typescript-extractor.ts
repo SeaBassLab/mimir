@@ -1,13 +1,23 @@
-import path from "node:path";
-import { readdir } from "node:fs/promises";
-import { readText } from "../io/fs";
-import type { ExtractedComponentFact, ExtractedProp } from "../contracts/resource";
+import path from "path";
+import { readdir } from "fs/promises";
+import ts from "typescript";
+import {
+  classifyResource,
+  mergeClassificationPolicy,
+  type SemanticResourceSignals
+} from "./semantic-resource-classifier";
+import type {
+  DiscoveredResourceFact,
+  ExtractedComponentFact,
+  SemanticResourceKind
+} from "../contracts/resource";
 
 const TS_EXTENSIONS = new Set([".ts", ".tsx"]);
 
-function isPascalCase(name: string): boolean {
-  return /^[A-Z][A-Za-z0-9]*$/.test(name);
-}
+export type TypeScriptResourceDiscoveryOptions = {
+  includeKinds?: SemanticResourceKind[];
+  excludeKinds?: SemanticResourceKind[];
+};
 
 function normalizeSlashes(value: string): string {
   return value.split(path.sep).join("/");
@@ -27,11 +37,7 @@ async function collectFiles(dir: string): Promise<string[]> {
       continue;
     }
 
-    if (
-      entry.isFile() &&
-      TS_EXTENSIONS.has(path.extname(entry.name)) &&
-      !entry.name.includes(".stories.")
-    ) {
+    if (entry.isFile() && TS_EXTENSIONS.has(path.extname(entry.name))) {
       files.push(absolutePath);
     }
   }
@@ -39,131 +45,268 @@ async function collectFiles(dir: string): Promise<string[]> {
   return files;
 }
 
-function extractExportedNames(content: string): string[] {
-  const names = new Set<string>();
-  const patterns = [
-    /export\s+function\s+([A-Z][A-Za-z0-9_]*)\s*\(/g,
-    /export\s+const\s+([A-Z][A-Za-z0-9_]*)\s*[:=]/g,
-    /export\s+class\s+([A-Z][A-Za-z0-9_]*)\s+/g,
-    /export\s+\{\s*([^}]+)\s*\}/g
-  ];
+function sourceFileHasModuleImport(sourceFile: ts.SourceFile, predicate: (modulePath: string) => boolean): boolean {
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+      continue;
+    }
 
-  for (const pattern of patterns) {
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(content)) !== null) {
-      if (pattern.source.includes("[^}]+")) {
-        const tokens = match[1].split(",").map((item) => item.trim());
-        for (const token of tokens) {
-          const aliasParts = token.split(/\s+as\s+/i).map((part) => part.trim());
-          const candidate = aliasParts[aliasParts.length - 1];
-          if (isPascalCase(candidate)) {
-            names.add(candidate);
-          }
-        }
-      } else {
-        const candidate = match[1];
-        if (isPascalCase(candidate)) {
-          names.add(candidate);
-        }
+    const modulePath = statement.moduleSpecifier.text;
+    if (predicate(modulePath)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function declarationContainsSignal(declaration: ts.Declaration, predicate: (node: ts.Node) => boolean): boolean {
+  let found = false;
+
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+
+    if (predicate(node)) {
+      found = true;
+      return;
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(declaration);
+  return found;
+}
+
+function hasJsxInDeclaration(declaration: ts.Declaration): boolean {
+  return declarationContainsSignal(
+    declaration,
+    (node) =>
+      ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)
+  );
+}
+
+function hasCreateContextCall(declaration: ts.Declaration): boolean {
+  return declarationContainsSignal(declaration, (node) => {
+    if (!ts.isCallExpression(node)) {
+      return false;
+    }
+
+    if (ts.isIdentifier(node.expression)) {
+      return node.expression.text === "createContext";
+    }
+
+    return ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === "createContext";
+  });
+}
+
+function hasStyledCall(declaration: ts.Declaration): boolean {
+  return declarationContainsSignal(declaration, (node) => {
+    if (!ts.isCallExpression(node)) {
+      return false;
+    }
+
+    if (ts.isIdentifier(node.expression) && node.expression.text === "styled") {
+      return true;
+    }
+
+    return ts.isPropertyAccessExpression(node.expression) && ts.isIdentifier(node.expression.expression)
+      ? node.expression.expression.text === "styled"
+      : false;
+  });
+}
+
+function getExportSymbol(
+  checker: ts.TypeChecker,
+  sourceFile: ts.SourceFile,
+  exportSymbol: ts.Symbol
+): { symbol: ts.Symbol; importName: string } | null {
+  const importName = exportSymbol.getName();
+
+  if ((exportSymbol.flags & ts.SymbolFlags.Alias) !== 0) {
+    const aliased = checker.getAliasedSymbol(exportSymbol);
+    return {
+      symbol: aliased,
+      importName
+    };
+  }
+
+  const moduleSymbol = checker.getSymbolAtLocation(sourceFile);
+  if (!moduleSymbol) {
+    return null;
+  }
+
+  return {
+    symbol: exportSymbol,
+    importName
+  };
+}
+
+function keyForDiscoveredResource(resource: Pick<DiscoveredResourceFact, "filePath" | "name">): string {
+  return `${resource.filePath}::${resource.name}`;
+}
+
+function shouldIgnoreSourceFile(sourceFile: ts.SourceFile, cwd: string): boolean {
+  if (sourceFile.isDeclarationFile) {
+    return true;
+  }
+
+  const relative = normalizeSlashes(path.relative(cwd, sourceFile.fileName));
+  return relative.startsWith("../") || relative === "..";
+}
+
+export async function discoverTypeScriptResources(
+  cwd: string,
+  packageName: string,
+  options: TypeScriptResourceDiscoveryOptions = {}
+): Promise<DiscoveredResourceFact[]> {
+  const files = await collectFiles(cwd);
+  const program = ts.createProgram(files, {
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.CommonJS,
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
+    strict: true,
+    jsx: ts.JsxEmit.ReactJSX,
+    skipLibCheck: true,
+    esModuleInterop: true,
+    allowSyntheticDefaultImports: true,
+    resolveJsonModule: true
+  });
+
+  const checker = program.getTypeChecker();
+  const policy = mergeClassificationPolicy({
+    include: options.includeKinds,
+    exclude: options.excludeKinds
+  });
+  const sourceSignalsCache = new Map<string, {
+    hasReactImport: boolean;
+    hasStorybookImport: boolean;
+    hasStyledImport: boolean;
+  }>();
+
+  const resolveSourceSignals = (sourceFile: ts.SourceFile): {
+    hasReactImport: boolean;
+    hasStorybookImport: boolean;
+    hasStyledImport: boolean;
+  } => {
+    const key = sourceFile.fileName;
+    const cached = sourceSignalsCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const resolved = {
+      hasReactImport: sourceFileHasModuleImport(
+        sourceFile,
+        (modulePath) => modulePath === "react" || modulePath.startsWith("react/")
+      ),
+      hasStorybookImport: sourceFileHasModuleImport(
+        sourceFile,
+        (modulePath) => modulePath.includes("storybook") || modulePath.includes("@stories")
+      ),
+      hasStyledImport: sourceFileHasModuleImport(
+        sourceFile,
+        (modulePath) =>
+          modulePath === "styled-components" ||
+          modulePath === "@emotion/styled" ||
+          modulePath.includes("styled")
+      )
+    };
+
+    sourceSignalsCache.set(key, resolved);
+    return resolved;
+  };
+
+  const resources = new Map<string, DiscoveredResourceFact>();
+
+  for (const sourceFile of program.getSourceFiles()) {
+    if (shouldIgnoreSourceFile(sourceFile, cwd)) {
+      continue;
+    }
+
+    const relativePath = normalizeSlashes(path.relative(cwd, sourceFile.fileName));
+    const moduleSymbol = checker.getSymbolAtLocation(sourceFile);
+    if (!moduleSymbol) {
+      continue;
+    }
+
+    for (const exported of checker.getExportsOfModule(moduleSymbol)) {
+      const resolved = getExportSymbol(checker, sourceFile, exported);
+      if (!resolved) {
+        continue;
+      }
+
+      const declaration = resolved.symbol.valueDeclaration ?? resolved.symbol.declarations?.[0];
+      if (!declaration) {
+        continue;
+      }
+
+      const declarationFile = declaration.getSourceFile();
+      if (shouldIgnoreSourceFile(declarationFile, cwd)) {
+        continue;
+      }
+
+      const declarationSourceSignals = resolveSourceSignals(declarationFile);
+
+      const declarationFilePath = normalizeSlashes(path.relative(cwd, declarationFile.fileName));
+      const name = resolved.symbol.getName();
+
+      const signals: SemanticResourceSignals = {
+        name,
+        filePath: declarationFilePath,
+        isPublicExport: true,
+        hasReactImport: declarationSourceSignals.hasReactImport,
+        hasJsx: hasJsxInDeclaration(declaration),
+        hasCreateContextCall: hasCreateContextCall(declaration),
+        hasStyledImport: declarationSourceSignals.hasStyledImport,
+        hasStyledCall: hasStyledCall(declaration),
+        hasStorybookImport: declarationSourceSignals.hasStorybookImport,
+        extension: path.extname(declarationFilePath)
+      };
+
+      const classification = classifyResource(signals, policy);
+      const candidate: DiscoveredResourceFact = {
+        name,
+        filePath: declarationFilePath,
+        importName: resolved.importName,
+        packageName,
+        classification
+      };
+
+      const key = keyForDiscoveredResource(candidate);
+      const previous = resources.get(key);
+      if (!previous || candidate.classification.confidence > previous.classification.confidence) {
+        resources.set(key, candidate);
       }
     }
   }
 
-  return [...names].sort((a, b) => a.localeCompare(b));
-}
-
-function parsePropsBlock(block: string): Record<string, ExtractedProp> {
-  const result: Record<string, ExtractedProp> = {};
-  const lines = block.split("\n");
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    const match = /^([A-Za-z_][A-Za-z0-9_]*)\??:\s*([^;]+);?$/.exec(trimmed);
-    if (!match) {
-      continue;
+  return [...resources.values()].sort((a, b) => {
+    const byFile = a.filePath.localeCompare(b.filePath);
+    if (byFile !== 0) {
+      return byFile;
     }
-
-    const propName = match[1];
-    const propType = match[2].trim();
-    const optional = trimmed.includes("?:");
-    result[propName] = {
-      name: propName,
-      type: propType,
-      required: !optional
-    };
-  }
-
-  return result;
-}
-
-function extractProps(content: string, componentName: string): Record<string, ExtractedProp> {
-  const interfacePattern = new RegExp(
-    `interface\\s+${componentName}Props\\s*\\{([\\s\\S]*?)\\}`,
-    "m"
-  );
-  const typePattern = new RegExp(
-    `type\\s+${componentName}Props\\s*=\\s*\\{([\\s\\S]*?)\\}`,
-    "m"
-  );
-
-  const interfaceMatch = interfacePattern.exec(content);
-  if (interfaceMatch) {
-    return parsePropsBlock(interfaceMatch[1]);
-  }
-
-  const typeMatch = typePattern.exec(content);
-  if (typeMatch) {
-    return parsePropsBlock(typeMatch[1]);
-  }
-
-  return {};
+    return a.name.localeCompare(b.name);
+  });
 }
 
 export async function extractTypeScriptComponents(
   cwd: string,
-  packageName: string
+  packageName: string,
+  options: TypeScriptResourceDiscoveryOptions = {}
 ): Promise<ExtractedComponentFact[]> {
-  const files = await collectFiles(cwd);
-  const components: ExtractedComponentFact[] = [];
+  const resources = await discoverTypeScriptResources(cwd, packageName, options);
 
-  for (const filePath of files) {
-    const content = await readText(filePath);
-    const exportedNames = extractExportedNames(content);
-    if (exportedNames.length === 0) {
-      continue;
-    }
-
-    const relativeFilePath = normalizeSlashes(path.relative(cwd, filePath));
-
-    for (const exportedName of exportedNames) {
-      components.push({
-        name: exportedName,
-        filePath: relativeFilePath,
-        importName: exportedName,
-        packageName,
-        props: extractProps(content, exportedName)
-      });
-    }
-  }
-
-  const unique = new Map<string, ExtractedComponentFact>();
-  for (const component of components) {
-    const key = component.name;
-    const previous = unique.get(key);
-    if (!previous) {
-      unique.set(key, component);
-      continue;
-    }
-
-    const previousScore =
-      Object.keys(previous.props).length + (previous.filePath.endsWith("/index.ts") ? 0 : 1);
-    const candidateScore =
-      Object.keys(component.props).length + (component.filePath.endsWith("/index.ts") ? 0 : 1);
-
-    if (candidateScore > previousScore) {
-      unique.set(key, component);
-    }
-  }
-
-  return [...unique.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return resources
+    .filter((resource) => resource.classification.generateDescriptor)
+    .map((resource) => ({
+      name: resource.name,
+      filePath: resource.filePath,
+      importName: resource.importName,
+      packageName: resource.packageName,
+      props: {}
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
