@@ -36,6 +36,7 @@ const DEFAULT_INCLUDE_KINDS: SemanticResourceKind[] = [
   "context",
   "provider",
   "template",
+  "icon",
   "page"
 ];
 
@@ -99,7 +100,6 @@ const classificationRules: ClassificationRule[] = [
       const lowerPath = normalizePath(signals.filePath);
       const lowerName = signals.name.toLowerCase();
       if (
-        signals.hasStyledImport ||
         signals.hasStyledCall ||
         lowerPath.includes(".styled.") ||
         lowerName.includes("globalstyle") ||
