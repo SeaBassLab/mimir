@@ -1,4 +1,4 @@
-import { generateApsFromEvidence } from "../generation/generate-service";
+import { compileApsFromDescriptors } from "../generation/generate-service";
 import type { GenerateReport } from "../generation/types";
 import type { MimirGenerator } from "./types";
 
@@ -9,6 +9,6 @@ type ApsGenerateOptions = {
 export const apsGenerator: MimirGenerator<ApsGenerateOptions, GenerateReport> = {
   name: "aps",
   async generate(cwd: string, options?: ApsGenerateOptions): Promise<GenerateReport> {
-    return generateApsFromEvidence(cwd, options ?? {});
+    return compileApsFromDescriptors(cwd, options ?? {});
   }
 };

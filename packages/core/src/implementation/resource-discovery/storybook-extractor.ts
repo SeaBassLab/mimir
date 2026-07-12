@@ -1,7 +1,7 @@
 import path from "node:path";
 import { readdir } from "node:fs/promises";
-import { readText } from "../../io/fs";
-import type { StorybookFacts } from "../types";
+import { readText } from "../io/fs";
+import type { StorybookFacts } from "../contracts/resource";
 
 function normalizeSlashes(value: string): string {
   return value.split(path.sep).join("/");
@@ -30,8 +30,7 @@ async function collectStoryFiles(dir: string): Promise<string[]> {
 }
 
 export async function extractStorybookFacts(cwd: string): Promise<StorybookFacts> {
-  const sourceDir = path.join(cwd, "src");
-  const files = await collectStoryFiles(sourceDir);
+  const files = await collectStoryFiles(cwd);
   const variantsByComponent: Record<string, string[]> = {};
   const storyFilesByComponent: Record<string, string[]> = {};
 

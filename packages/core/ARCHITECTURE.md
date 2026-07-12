@@ -40,16 +40,20 @@ Implementation code can depend on protocol modules.
 ## Author Knowledge Authoring
 
 `mimir author` reuses the TypeScript resource extractor and creates missing YAML
-templates under `aps/knowledge/components`. These files are version-controlled
-source inputs, separate from the regenerable APS artifacts under `dist/aps`.
-The authoring command does not invoke or modify generation. During its own
-workflow, `generate` loads these inputs and composes their three supported
-fields into the generated component resources.
+descriptor scaffolds (`*.mimir.yaml`) near source files. These files are
+version-controlled source inputs, separate from the regenerable APS artifacts
+under `dist/aps`.
+Descriptor discovery is workspace-relative and does not require a fixed source
+root such as `src`.
+The authoring command owns descriptor synchronization: it creates missing
+resources, refreshes only the `auto` block, and preserves `human` content.
+During generation, `generate` compiles descriptor resources only and does not
+perform resource discovery heuristics.
 
-Authoring is create-only: existing Author Knowledge files are never modified. The
+Authoring never overwrites human fields. The
 canonical component resource ID is shared with generation through
 `src/implementation/resource-identity.ts`, preventing identity drift between
-the authoring filenames and generated APS Manifest resources.
+the descriptor identities and generated APS Manifest resources.
 
 Synchronization reads the enriched APS Manifest and renders component semantics in
 the shared `.agents/aps/components.md` context. Adapters reference that shared

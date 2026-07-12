@@ -15,7 +15,7 @@ import { isDryRun, shouldEmitJson } from "../dx/runtime/options";
 export function registerGenerateCommand(program: Command): void {
   const command = program
     .command("generate")
-    .description("Generate APS resources from package evidence")
+    .description("Compile APS resources from descriptor contracts")
     .option("--json", "output machine-readable JSON")
     .option("--force", "replace existing generated resources in dist/aps")
     .action(async (options: { json?: boolean; force?: boolean }) => {
@@ -57,7 +57,7 @@ export function registerGenerateCommand(program: Command): void {
           if (report.missingHumanMetadata.length > 0) {
             warn("human metadata is incomplete for some components");
             console.log("Expected human metadata fields: description, whenToUse, whenNotToUse.");
-            console.log("Run 'mimir author' and complete the YAML files in aps/knowledge/components.");
+            console.log("Run 'mimir author' and complete the generated *.mimir.yaml descriptor files.");
             console.log("A README description remains the fallback when authored description is empty.");
             console.log("Missing human metadata for components:");
             for (const name of report.missingHumanMetadata) {

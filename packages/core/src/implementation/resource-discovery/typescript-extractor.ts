@@ -1,7 +1,7 @@
 import path from "node:path";
 import { readdir } from "node:fs/promises";
-import { readText } from "../../io/fs";
-import type { ExtractedComponentFact, ExtractedProp } from "../types";
+import { readText } from "../io/fs";
+import type { ExtractedComponentFact, ExtractedProp } from "../contracts/resource";
 
 const TS_EXTENSIONS = new Set([".ts", ".tsx"]);
 
@@ -123,8 +123,7 @@ export async function extractTypeScriptComponents(
   cwd: string,
   packageName: string
 ): Promise<ExtractedComponentFact[]> {
-  const sourceDir = path.join(cwd, "src");
-  const files = await collectFiles(sourceDir);
+  const files = await collectFiles(cwd);
   const components: ExtractedComponentFact[] = [];
 
   for (const filePath of files) {

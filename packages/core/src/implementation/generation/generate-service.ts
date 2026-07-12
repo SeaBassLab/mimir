@@ -1,16 +1,19 @@
 import path from "node:path";
 import { ensureDir, fileExists, readJson, writeJson } from "../io/fs";
-import { isObject } from "../io/json";
 import { validateApsManifest } from "../../protocol/compatibility";
 import { validateGovernance } from "../../protocol/governance";
-import { extractReadmeFacts } from "./extractors/readme-extractor";
-import { extractStorybookFacts } from "./extractors/storybook-extractor";
-import { extractTypeScriptComponents } from "./extractors/typescript-extractor";
-import { buildComponentResource } from "./resource-builders/component-builder";
 import { buildExamplesNotImplemented } from "./resource-builders/example-builder";
 import type { GenerateOutput, GenerateReport, GeneratedComponentResource } from "./types";
-import { loadComponentKnowledge } from "../authoring/knowledge-loader";
+import { loadMimirDescriptors } from "../descriptors/descriptor-repository";
+import type { MimirResourceDescriptor } from "../contracts/descriptor";
 import { createComponentResourceId } from "../resource-identity";
+import {
+  fromHumanKnowledge,
+  fromPackageJson,
+  fromStorybook,
+  fromTypeScript,
+  missingHumanSource
+} from "./provenance/provenance-builder";
 
 type PackageJson = {
   name?: unknown;
@@ -20,14 +23,68 @@ type GenerateOptions = {
   force?: boolean;
 };
 
-const APS_MANIFEST_RELATIVE_PATH = "./dist/aps/manifest.json";
-
 function hasHumanMetadata(component: GeneratedComponentResource): boolean {
   return component.description.trim() !== "" && component.whenToUse.length > 0 && component.whenNotToUse.length > 0;
 }
 
 function toUniqueSorted(values: string[]): string[] {
   return [...new Set(values)].sort((a, b) => a.localeCompare(b));
+}
+
+function buildComponentFromDescriptor(
+  packageName: string,
+  descriptor: MimirResourceDescriptor
+): GeneratedComponentResource {
+  const sourceFile = descriptor.auto.source.file ?? descriptor.sourceRef;
+  const storyFiles = descriptor.auto.storyFiles;
+  const variants = descriptor.auto.variants;
+  const authoredDescription = descriptor.human.description.trim();
+  const evidenceByField = {
+    id: { evidence: [fromPackageJson()] },
+    name: { evidence: [fromTypeScript(sourceFile)] },
+    package: { evidence: [fromPackageJson()] },
+    import: { evidence: [fromTypeScript(sourceFile)] },
+    description: {
+      evidence: authoredDescription !== "" ? [fromHumanKnowledge(descriptor.sourceRef)] : [missingHumanSource("description")]
+    },
+    props: { evidence: [fromTypeScript(sourceFile)] },
+    variants: {
+      evidence:
+        variants.length > 0
+          ? storyFiles.length > 0
+            ? storyFiles.map((file) => fromStorybook(file))
+            : [fromTypeScript(sourceFile)]
+          : [fromTypeScript(sourceFile)]
+    },
+    whenToUse: {
+      evidence:
+        descriptor.human.whenToUse.length > 0
+          ? [fromHumanKnowledge(descriptor.sourceRef)]
+          : [missingHumanSource("whenToUse")]
+    },
+    whenNotToUse: {
+      evidence:
+        descriptor.human.whenNotToUse.length > 0
+          ? [fromHumanKnowledge(descriptor.sourceRef)]
+          : [missingHumanSource("whenNotToUse")]
+    }
+  };
+
+  return {
+    type: "component",
+    id: descriptor.id ?? createComponentResourceId(packageName, descriptor.name),
+    name: descriptor.name,
+    package: packageName,
+    import: descriptor.auto.source.symbol ?? descriptor.name,
+    description: authoredDescription,
+    props: descriptor.auto.props,
+    variants,
+    whenToUse: descriptor.human.whenToUse,
+    whenNotToUse: descriptor.human.whenNotToUse,
+    governance: {
+      fields: evidenceByField
+    }
+  };
 }
 
 async function readPackageName(cwd: string): Promise<string> {
@@ -41,55 +98,7 @@ async function readPackageName(cwd: string): Promise<string> {
   return packageJson.name;
 }
 
-async function ensureProviderDiscoverability(cwd: string): Promise<string[]> {
-  const warnings: string[] = [];
-  const packageJsonPath = path.join(cwd, "package.json");
-  const packageJson = await readJson<Record<string, unknown>>(packageJsonPath);
-
-  let changed = false;
-
-  if (!isObject(packageJson.aps)) {
-    packageJson.aps = {};
-    changed = true;
-  }
-
-  const aps = packageJson.aps as Record<string, unknown>;
-  if (aps.version === undefined) {
-    aps.version = 1;
-    changed = true;
-    warnings.push("APS config version was missing and has been set to 1.");
-  }
-
-  if (aps.manifest !== APS_MANIFEST_RELATIVE_PATH) {
-    const previous = typeof aps.manifest === "string" ? aps.manifest : "(not set)";
-    aps.manifest = APS_MANIFEST_RELATIVE_PATH;
-    changed = true;
-    warnings.push(
-      `APS manifest path updated from '${previous}' to '${APS_MANIFEST_RELATIVE_PATH}' for consistency with generated resources.`
-    );
-  }
-
-  if (isObject(packageJson.exports)) {
-    const exportsMap = packageJson.exports as Record<string, unknown>;
-    if (exportsMap["./package.json"] !== "./package.json") {
-      exportsMap["./package.json"] = "./package.json";
-      changed = true;
-      warnings.push("Added exports['./package.json'] for provider discovery compatibility.");
-    }
-  } else if (packageJson.exports !== undefined) {
-    warnings.push(
-      "Package exports is not an object. Could not add exports['./package.json']; configure it manually for discovery compatibility."
-    );
-  }
-
-  if (changed) {
-    await writeJson(packageJsonPath, packageJson);
-  }
-
-  return warnings;
-}
-
-export async function generateApsFromEvidence(
+export async function compileApsFromDescriptors(
   cwd: string,
   options: GenerateOptions = {}
 ): Promise<GenerateReport> {
@@ -105,29 +114,37 @@ export async function generateApsFromEvidence(
     );
   }
 
-  const discoverabilityWarnings = await ensureProviderDiscoverability(cwd);
-
   await ensureDir(outputDir);
 
-  const [typescriptComponents, storybookFacts, readmeFacts] = await Promise.all([
-    extractTypeScriptComponents(cwd, packageName),
-    extractStorybookFacts(cwd),
-    extractReadmeFacts(cwd)
-  ]);
+  const descriptorResult = await loadMimirDescriptors(cwd);
+  const unsupportedKinds = toUniqueSorted(
+    descriptorResult.resources.filter((resource) => resource.kind !== "component").map((resource) => resource.kind)
+  );
+
+  const componentDescriptors = descriptorResult.resources.filter(
+    (resource): resource is MimirResourceDescriptor => resource.kind === "component"
+  );
 
   const components = await Promise.all(
-    typescriptComponents.map(async (component) => {
-      const resourceId = createComponentResourceId(component.packageName, component.name);
-      const authored = await loadComponentKnowledge(cwd, resourceId);
-      return buildComponentResource(component, storybookFacts, readmeFacts, authored);
-    })
+    componentDescriptors.map(async (descriptor) => buildComponentFromDescriptor(packageName, descriptor))
   );
 
   const exampleResult = buildExamplesNotImplemented();
+  const descriptorWarnings = [...descriptorResult.warnings];
+
+  if (descriptorResult.descriptorFiles.length === 0) {
+    descriptorWarnings.push("No *.mimir.yaml descriptors found. Run 'mimir author' to scaffold descriptor files.");
+  }
+
+  if (unsupportedKinds.length > 0) {
+    descriptorWarnings.push(
+      `Descriptor resources ignored by generator v1 (unsupported kinds): ${unsupportedKinds.join(", ")}.`
+    );
+  }
 
   const output: GenerateOutput = {
     components,
-    warnings: [...exampleResult.warnings, ...discoverabilityWarnings],
+    warnings: [...exampleResult.warnings, ...descriptorWarnings],
     missingHumanMetadata: toUniqueSorted(
       components
         .filter((component) => !hasHumanMetadata(component))
@@ -164,4 +181,11 @@ export async function generateApsFromEvidence(
       warnings: governanceResult.warnings
     }
   };
+}
+
+export async function generateApsFromEvidence(
+  cwd: string,
+  options: GenerateOptions = {}
+): Promise<GenerateReport> {
+  return compileApsFromDescriptors(cwd, options);
 }

@@ -75,7 +75,7 @@ APS gives software a single, structured, machine-readable representation of that
 ## Conceptual Model
 
 ```text
-Source Code --mimir author--> Author Knowledge (aps/knowledge)
+Source Code --mimir author--> Author Knowledge (*.mimir.yaml descriptors)
    |                                      |
    +-------------------+------------------+
            |
@@ -96,7 +96,7 @@ Source Code --mimir author--> Author Knowledge (aps/knowledge)
 | --- | --- | --- |
 | Knowledge Provider | Library or platform package | Publishes structured software knowledge. |
 | Consumer | Application or platform toolchain | Consumes knowledge published by providers. |
-| Author Knowledge | Knowledge Provider | Provider-authored source knowledge under `aps/knowledge` for intent that cannot be inferred automatically. |
+| Author Knowledge | Knowledge Provider | Provider-authored source knowledge in versioned `*.mimir.yaml` descriptors for intent that cannot be inferred automatically. |
 | APS Manifest | Knowledge Provider | Entry point of a provider package. |
 | Resource | Knowledge Provider | Knowledge unit such as a component, API, service, rule, or example. |
 | Governance | Knowledge Provider | Trust metadata covering provenance, evidence, lifecycle, applicability, and policy consistency. |
@@ -188,14 +188,43 @@ mimir doctor
 Step summary:
 
 - `mimir init`: prepares APS configuration in package metadata.
-- `mimir author`: creates missing Author Knowledge YAML templates under `aps/knowledge` without modifying existing files.
-- `mimir generate`: composes observable evidence (TypeScript exports, Storybook metadata, package information) with Author Knowledge from `aps/knowledge` into the APS Manifest and related resources.
+- `mimir author`: synchronizes descriptor `auto` blocks from project evidence and preserves `human` blocks.
+- `mimir generate`: compiles APS resources exclusively from `*.mimir.yaml` descriptors.
 - `mimir validate`: verifies APS structural compliance.
 - `mimir governance`: validates governance metadata and policy consistency.
 - `mimir doctor`: evaluates maturity level before release.
 - Publish provider package: distributes the provider through a package registry.
 
-Complete the generated authoring templates manually or with an AI agent before generation when human intent is required. Mimir does not write that content.
+Complete the generated descriptor scaffolds manually or with an AI agent before generation when human intent is required. Mimir does not write that content.
+
+Descriptor-first workflow notes:
+
+- Mimir no longer depends on a fixed source root such as `src`.
+- `mimir init` is bootstrap-only and does not discover resources or create descriptors.
+- `mimir author` discovers resources, creates missing descriptors, and refreshes only `auto` fields.
+- `mimir generate` reads only `*.mimir.yaml` descriptors as the provider contract source.
+
+Minimal descriptor shape:
+
+```yaml
+schemaVersion: 1
+resources:
+  - kind: component
+    name: "Button"
+    id: "@acme/ui.component.button"
+    auto:
+      source:
+        file: "app/ui/Button.tsx"
+        symbol: "Button"
+        public: true
+      props: []
+      variants: []
+      storyFiles: []
+    human:
+      description: ""
+      whenToUse: []
+      whenNotToUse: []
+```
 
 `mimir generate` composes completed `description`, `whenToUse`, and
 `whenNotToUse` fields into the APS Manifest. `mimir sync` projects those fields
@@ -279,8 +308,9 @@ mimir init
 
 Why each step exists:
 
-- Author -> creates missing, version-controlled Author Knowledge templates for intent that cannot be inferred automatically.
-- Generate -> composes observable evidence and Author Knowledge into machine-readable APS artifacts.
+- Author -> discovers resources, creates missing descriptors, and synchronizes only `auto` fields while preserving `human` authoring.
+- Author -> updates only descriptor `auto` fields and preserves `human` authoring.
+- Generate -> compiles descriptor-authored knowledge into machine-readable APS artifacts.
 - Validate -> ensures protocol compliance.
 - Governance -> ensures trust, provenance, and policy consistency.
 - Doctor -> evaluates provider maturity and release readiness.
@@ -375,9 +405,9 @@ mimir governance --json
 
 | Command | Role | Description | Example |
 | --- | --- | --- | --- |
-| `mimir init` | Provider | Initialize APS support in package metadata. | `mimir init` |
-| `mimir author` | Provider | Create missing Author Knowledge templates without overwriting existing files. | `mimir author --dry-run` |
-| `mimir generate` | Provider | Compose APS resources from observable evidence and Author Knowledge. | `mimir generate --force` |
+| `mimir init` | Provider | Initialize APS support in package metadata (bootstrap only). | `mimir init` |
+| `mimir author` | Provider | Sync descriptor `auto` blocks, preserve `human`, and report/delete orphans. | `mimir author --delete-orphans` |
+| `mimir generate` | Provider | Compile APS resources from descriptor contracts only. | `mimir generate --force` |
 | `mimir discover` | Consumer | Discover APS-enabled dependencies/providers. | `mimir discover` |
 | `mimir validate` | Both | Validate APS Manifest and declared resources. | `mimir validate` |
 | `mimir governance` | Provider | Validate provenance, evidence, lifecycle, applicability and policy consistency metadata. | `mimir governance --json` |
@@ -453,7 +483,7 @@ Documentation provides context and intent, while APS provides interoperable, mac
 - [x] Validation
 - [x] Governance
 - [x] Generate v1
-- [x] Author Knowledge authoring
+- [x] Descriptor-driven Author Knowledge authoring (`*.mimir.yaml`)
 - [x] Context generation
 - [x] Adapter sync
 

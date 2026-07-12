@@ -24,14 +24,6 @@ export function fromStorybook(sourceRef: string): FieldEvidence {
   };
 }
 
-export function fromReadme(sourceRef: string): FieldEvidence {
-  return {
-    sourceType: "readme",
-    sourceRef,
-    confidence: "medium"
-  };
-}
-
 export function fromHumanKnowledge(sourceRef: string): FieldEvidence {
   return {
     sourceType: "human",

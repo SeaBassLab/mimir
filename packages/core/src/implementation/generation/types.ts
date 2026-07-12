@@ -1,3 +1,5 @@
+import type { ExtractedProp } from "../contracts/resource";
+
 export type EvidenceConfidence = "high" | "medium" | "low";
 
 export type FieldEvidence = {
@@ -10,29 +12,6 @@ export type FieldEvidence = {
 export type GeneratedField<T> = {
   value: T;
   evidence: FieldEvidence[];
-};
-
-export type ExtractedProp = {
-  name: string;
-  type?: string;
-  required?: boolean;
-};
-
-export type ExtractedComponentFact = {
-  name: string;
-  filePath: string;
-  importName: string;
-  packageName: string;
-  props: Record<string, ExtractedProp>;
-};
-
-export type StorybookFacts = {
-  variantsByComponent: Record<string, string[]>;
-  storyFilesByComponent: Record<string, string[]>;
-};
-
-export type ReadmeFacts = {
-  descriptionsByComponent: Record<string, string>;
 };
 
 export type GeneratedComponentResource = {

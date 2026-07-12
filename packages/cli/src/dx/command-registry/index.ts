@@ -43,26 +43,38 @@ const COMMANDS: DxCommandMeta[] = [
   },
   {
     name: "author",
-    description: "Create human knowledge authoring files for discovered APS resources",
-    usage: `${cliCommand("author")} [--json] [--dry-run]`,
-    examples: [cliCommand("author"), `${cliCommand("author")} --dry-run`, `${cliCommand("author")} --json`],
+    description: "Sync *.mimir.yaml descriptors (auto) while preserving human authoring",
+    usage: `${cliCommand("author")} [--json] [--dry-run] [--delete-orphans]`,
+    examples: [
+      cliCommand("author"),
+      `${cliCommand("author")} --dry-run`,
+      `${cliCommand("author")} --delete-orphans`,
+      `${cliCommand("author")} --json`
+    ],
     flags: [
       { name: "--json", description: "Emit deterministic machine-readable authoring result." },
-      { name: "--dry-run", description: "Show missing authoring files without creating them." }
+      { name: "--dry-run", description: "Show descriptor sync plan without writing files." },
+      { name: "--delete-orphans", description: "Delete orphaned descriptor resources during sync." },
+      { name: "--no-refresh-auto", description: "Skip automatic descriptor field refresh." },
+      { name: "--interactive", description: "Reserved for future guided human authoring mode." },
+      { name: "--ai", description: "Reserved for future AI-assisted human authoring mode." }
     ],
     aliases: [],
     hidden: false,
     category: "workflow",
-    notes: ["Creates missing YAML files and never modifies existing authoring content."],
+    notes: [
+      "Phase 1: discovers resources and synchronizes only the descriptor auto block.",
+      "Phase 2: preserves human fields; no automatic overwrite of human authoring."
+    ],
     exitCodes: [
-      { code: 0, meaning: "Authoring files created or already present." },
+      { code: 0, meaning: "Descriptor files created or already present." },
       { code: 1, meaning: "Resource discovery or authoring failed." }
     ],
     subcommands: []
   },
   {
     name: "generate",
-    description: "Generate APS resources from package evidence",
+    description: "Compile APS resources from descriptor contracts",
     usage: `${cliCommand("generate")} [--json] [--force]`,
     examples: [cliCommand("generate"), `${cliCommand("generate")} --force`, `${cliCommand("generate")} --json`],
     flags: [
@@ -72,7 +84,10 @@ const COMMANDS: DxCommandMeta[] = [
     aliases: [],
     hidden: false,
     category: "workflow",
-    notes: ["Does not overwrite existing generated output unless --force is provided."],
+    notes: [
+      "Reads provider resource contracts from *.mimir.yaml descriptors.",
+      "Does not overwrite existing generated output unless --force is provided."
+    ],
     exitCodes: [
       { code: 0, meaning: "Generation completed and validation passed." },
       { code: 1, meaning: "Generation failed or validation failed." }
