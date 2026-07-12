@@ -222,6 +222,7 @@ export async function discoverTypeScriptResources(
         name,
         filePath: declarationFilePath,
         isPublicExport: true,
+        hasRuntimeValue: Boolean(resolved.symbol.valueDeclaration),
         hasReactImport: declarationSourceSignals.hasReactImport,
         hasJsx: hasJsxInDeclaration(declaration),
         hasCreateContextCall: hasCreateContextCall(declaration),

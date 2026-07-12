@@ -59,7 +59,7 @@ persistence policy. It creates one source file per resource, refreshes managed
 
 ```text
 src/
-  Button.button.mimir.yaml
+  Button.mimir.yaml
 ```
 
 Complete the generated YAML manually or with an AI agent:

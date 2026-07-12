@@ -10,6 +10,7 @@ export type SemanticResourceSignals = {
   name: string;
   filePath: string;
   isPublicExport: boolean;
+  hasRuntimeValue: boolean;
   hasReactImport: boolean;
   hasJsx: boolean;
   hasCreateContextCall: boolean;
@@ -37,6 +38,8 @@ const DEFAULT_INCLUDE_KINDS: SemanticResourceKind[] = [
   "provider",
   "template",
   "icon",
+  "theme",
+  "token",
   "page"
 ];
 
@@ -113,7 +116,7 @@ const classificationRules: ClassificationRule[] = [
   {
     id: "context",
     evaluate: (signals) => {
-      if (signals.hasCreateContextCall || signals.name.endsWith("Context")) {
+      if (signals.hasRuntimeValue && (signals.hasCreateContextCall || signals.name.endsWith("Context"))) {
         return [{ kind: "context", score: 0.93, reason: "react-context-signal" }];
       }
       return [];
@@ -122,7 +125,7 @@ const classificationRules: ClassificationRule[] = [
   {
     id: "provider",
     evaluate: (signals) => {
-      if (signals.name.endsWith("Provider")) {
+      if (signals.hasRuntimeValue && signals.name.endsWith("Provider")) {
         const results: RuleScore[] = [{ kind: "provider", score: 0.9, reason: "provider-name-suffix" }];
         if (signals.hasJsx || signals.hasReactImport) {
           results.push({ kind: "component", score: 0.65, reason: "provider-react-signal" });
@@ -135,7 +138,7 @@ const classificationRules: ClassificationRule[] = [
   {
     id: "hook",
     evaluate: (signals) => {
-      if (/^use[A-Z0-9].+/.test(signals.name)) {
+      if (signals.hasRuntimeValue && /^use[A-Z0-9].+/.test(signals.name)) {
         const boost = signals.hasReactImport ? 0.9 : 0.75;
         return [{ kind: "hook", score: boost, reason: "hook-name-prefix" }];
       }
@@ -146,7 +149,7 @@ const classificationRules: ClassificationRule[] = [
     id: "page",
     evaluate: (signals) => {
       const lowerPath = normalizePath(signals.filePath);
-      if (signals.name.endsWith("Page") || lowerPath.includes("/pages/") || lowerPath.includes("/page/")) {
+      if (signals.hasRuntimeValue && (signals.name.endsWith("Page") || lowerPath.includes("/pages/") || lowerPath.includes("/page/"))) {
         return [{ kind: "page", score: 0.85, reason: "page-signal" }];
       }
       return [];
@@ -156,7 +159,7 @@ const classificationRules: ClassificationRule[] = [
     id: "template",
     evaluate: (signals) => {
       const lowerPath = normalizePath(signals.filePath);
-      if (signals.name.endsWith("Template") || lowerPath.includes("/templates/") || lowerPath.includes("/template/")) {
+      if (signals.hasRuntimeValue && (signals.name.endsWith("Template") || lowerPath.includes("/templates/") || lowerPath.includes("/template/"))) {
         return [{ kind: "template", score: 0.84, reason: "template-signal" }];
       }
       return [];
@@ -166,7 +169,7 @@ const classificationRules: ClassificationRule[] = [
     id: "icon",
     evaluate: (signals) => {
       const lowerPath = normalizePath(signals.filePath);
-      if (signals.name.endsWith("Icon") || lowerPath.includes("/icons/")) {
+      if (signals.hasRuntimeValue && (signals.name.endsWith("Icon") || lowerPath.includes("/icons/"))) {
         return [{ kind: "icon", score: 0.8, reason: "icon-signal" }];
       }
       return [];
@@ -179,15 +182,29 @@ const classificationRules: ClassificationRule[] = [
       const lowerName = signals.name.toLowerCase();
       const results: RuleScore[] = [];
 
-      if (hasWord(lowerName, "theme") || lowerPath.includes("/theme/") || lowerPath.includes("/themes/")) {
+      if (
+        signals.hasRuntimeValue &&
+        (hasWord(lowerName, "theme") || lowerPath.includes("/theme/") || lowerPath.includes("/themes/"))
+      ) {
         results.push({ kind: "theme", score: 0.82, reason: "theme-signal" });
       }
 
       if (
-        hasWord(lowerName, "token") ||
-        lowerPath.includes("/token/") ||
-        lowerPath.includes("/tokens/") ||
-        lowerPath.includes("/design-tokens/")
+        signals.hasRuntimeValue &&
+        (
+          hasWord(lowerName, "token") ||
+          lowerName === "palette" ||
+          lowerName === "colors" ||
+          lowerName === "spacing" ||
+          lowerName === "typography" ||
+          lowerName === "radius" ||
+          lowerName === "shadows" ||
+          lowerName === "zindex" ||
+          lowerName === "breakpoints" ||
+          lowerPath.includes("/token/") ||
+          lowerPath.includes("/tokens/") ||
+          lowerPath.includes("/design-tokens/")
+        )
       ) {
         results.push({ kind: "token", score: 0.82, reason: "token-signal" });
       }
@@ -199,7 +216,7 @@ const classificationRules: ClassificationRule[] = [
     id: "component",
     evaluate: (signals) => {
       const startsUppercase = /^[A-Z][A-Za-z0-9_]*$/.test(signals.name);
-      if (startsUppercase && (signals.hasJsx || signals.hasReactImport || signals.extension === ".tsx")) {
+      if (signals.hasRuntimeValue && startsUppercase && (signals.hasJsx || signals.hasReactImport || signals.extension === ".tsx")) {
         return [{ kind: "component", score: 0.78, reason: "react-component-signal" }];
       }
       return [];

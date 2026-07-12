@@ -115,7 +115,12 @@ function normalizeSlashes(value: string): string {
 }
 
 function sanitizePathSegment(value: string): string {
-  const normalized = value.trim().replace(/[^A-Za-z0-9_-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  const normalized = value
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/[^A-Za-z0-9_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
   return normalized === "" ? "resource" : normalized.toLowerCase();
 }
 
@@ -123,6 +128,9 @@ function toDescriptorPath(sourceFile: string, resourceName: string): string {
   const ext = path.extname(sourceFile);
   const base = path.basename(sourceFile, ext);
   const segment = sanitizePathSegment(resourceName);
+  if (sanitizePathSegment(base) === segment) {
+    return path.join(path.dirname(sourceFile), `${base}.mimir.yaml`);
+  }
   return path.join(path.dirname(sourceFile), `${base}.${segment}.mimir.yaml`);
 }
 
