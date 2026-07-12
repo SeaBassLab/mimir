@@ -23,6 +23,7 @@ This namespace should stay focused on protocol semantics, not CLI/runtime detail
 
 - CLI-invoked services: `src/implementation/services/*`
 - Filesystem and config handling: `src/implementation/io/*`, `src/implementation/configuration/*`
+- Human knowledge authoring orchestration: `src/implementation/services/authoring-service.ts`
 - Dependency discovery and sync orchestration: `src/implementation/dependency-discovery/*`, `src/implementation/synchronization/*`
 - Adapters and extension points: `src/implementation/adapters/*`, `src/implementation/generators/*`
 - Validation engine and runtime workflows: `src/implementation/validation-engine/*`, `src/implementation/generation/*`, `src/implementation/doctor/*`
@@ -35,3 +36,15 @@ This namespace should stay focused on protocol semantics, not CLI/runtime detail
 
 Protocol code must not depend on CLI or runtime-specific modules.
 Implementation code can depend on protocol modules.
+
+## Human Knowledge Authoring
+
+`mimir author` reuses the TypeScript resource extractor and creates missing YAML
+templates under `aps/knowledge/components`. These files are version-controlled
+source inputs, separate from the regenerable APS artifacts under `dist/aps`.
+The current authoring workflow does not invoke or modify generation.
+
+Authoring is create-only: existing human-authored files are never modified. The
+canonical component resource ID is shared with generation through
+`src/implementation/resource-identity.ts`, preventing identity drift between
+the authoring filenames and generated manifest resources.

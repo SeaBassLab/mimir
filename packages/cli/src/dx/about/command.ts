@@ -35,6 +35,7 @@ function buildAboutPayload(command: Command): AboutPayload {
     version: resolveVersion(command),
     providerWorkflow: [
       cliCommand("init"),
+      cliCommand("author"),
       cliCommand("generate"),
       cliCommand("validate"),
       cliCommand("governance"),

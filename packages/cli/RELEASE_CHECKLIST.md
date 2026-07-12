@@ -1,17 +1,17 @@
 # APS Release Checklist
 
 ## Build
-- Install dependencies: `npm ci`
-- Compile project: `npm run build`
+- Install dependencies: `pnpm install --frozen-lockfile`
+- Compile project: `pnpm build`
 
 ## Tests
 - Run test suite (when available)
-- Verify fixture-based command checks for discover, validate, governance, doctor, generate, and sync
+- Verify fixture-based command checks for author, discover, validate, governance, doctor, generate, context, and sync
 
 ## npm package validation
 - Inspect publish contents: `npm pack --dry-run`
 - Confirm package metadata completeness in `package.json`
-- Confirm binary entry is correct (`bin.aps`)
+- Confirm binary entry is correct (`bin.mimir`)
 
 ## README review
 - Confirm APS Protocol positioning is clear
@@ -32,5 +32,4 @@
 
 ## Example provider verification
 - Validate example provider structure and generated APS artifacts
-- Verify `aps generate`, `aps validate`, and `aps doctor` expected outcomes on fixtures
-
+- Verify `mimir author`, `mimir generate`, `mimir validate`, and `mimir doctor` expected outcomes on fixtures

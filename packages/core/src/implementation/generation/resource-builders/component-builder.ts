@@ -5,40 +5,13 @@ import {
   fromTypeScript,
   missingHumanSource
 } from "../provenance/provenance-builder";
+import { createComponentResourceId } from "../../resource-identity";
 import type {
   ExtractedComponentFact,
   GeneratedComponentResource,
   ReadmeFacts,
   StorybookFacts
 } from "../types";
-
-function sanitizeSegment(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/^@/, "")
-    .replace(/[^a-z0-9]+/g, "")
-    .trim();
-}
-
-function splitPackageName(packageName: string): { org: string; pkg: string } {
-  if (packageName.startsWith("@")) {
-    const parts = packageName.split("/");
-    const org = sanitizeSegment(parts[0] ?? "local");
-    const pkg = sanitizeSegment(parts[1] ?? "package");
-    return { org: org || "local", pkg: pkg || "package" };
-  }
-
-  return {
-    org: "local",
-    pkg: sanitizeSegment(packageName) || "package"
-  };
-}
-
-function createDeterministicId(packageName: string, componentName: string): string {
-  const { org, pkg } = splitPackageName(packageName);
-  const name = sanitizeSegment(componentName) || "component";
-  return `${org}.${pkg}.component.${name}`;
-}
 
 export function buildComponentResource(
   component: ExtractedComponentFact,
@@ -73,7 +46,7 @@ export function buildComponentResource(
 
   return {
     type: "component",
-    id: createDeterministicId(component.packageName, component.name),
+    id: createComponentResourceId(component.packageName, component.name),
     name: component.name,
     package: component.packageName,
     import: component.importName,

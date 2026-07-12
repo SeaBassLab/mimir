@@ -9,8 +9,8 @@ Reference implementation CLI for APS Protocol.
 
 Formal docs:
 
-- [APS Protocol Specification v1](./docs/specification.md)
-- [APS Protocol Rationale](./docs/rationale.md)
+- [APS Protocol Specification v1](https://github.com/SeaBassLab/aps-protocol/blob/main/docs/specification.md)
+- [APS Protocol Rationale](https://github.com/SeaBassLab/aps-protocol/blob/main/docs/rationale.md)
 
 ## Introduction
 
@@ -75,10 +75,10 @@ APS gives software a single, structured, machine-readable representation of that
 ## Conceptual Model
 
 ```text
-Source Code
-      |
-      v
-mimir generate
+Source Code                    mimir author
+      |                             |
+      v                             v
+mimir generate              aps/knowledge
       |
       v
 APS Knowledge Base
@@ -170,6 +170,7 @@ Create your first APS Knowledge Provider:
 cd my-library
 
 mimir init
+mimir author
 mimir generate
 
 # output
@@ -189,13 +190,17 @@ mimir doctor
 Step summary:
 
 - `mimir init`: prepares APS configuration in package metadata.
+- `mimir author`: creates missing human-knowledge YAML templates under `aps/knowledge` without modifying existing files.
 - `mimir generate`: scans your project and creates an initial APS knowledge base from observable evidence such as TypeScript exports, Storybook metadata, and package information.
 - `mimir validate`: verifies APS structural compliance.
 - `mimir governance`: validates governance metadata and policy consistency.
 - `mimir doctor`: evaluates maturity level before release.
 - Publish provider package: distributes the provider through a package registry.
 
-Human knowledge is intentionally left for later review.
+Complete the generated authoring templates manually or with an AI agent before generation when human intent is required. Mimir does not write that content.
+
+In this release, `author` prepares the source files only. Consuming them from
+`generate` is a separate pipeline integration.
 
 ## Example
 
@@ -234,6 +239,10 @@ Provider project:
 
 ```text
 my-ui-library/
+  aps/
+    knowledge/
+      components/
+        acme.ui.component.button.yaml
   dist/
     aps/
       manifest.json
@@ -261,6 +270,7 @@ In practice, the provider publishes structured software knowledge once, and cons
 
 ```text
 mimir init
+  -> mimir author
   -> mimir generate
   -> mimir validate
   -> mimir governance
@@ -270,6 +280,7 @@ mimir init
 
 Why each step exists:
 
+- Author -> creates missing, version-controlled templates for human knowledge.
 - Generate -> creates machine-readable knowledge artifacts.
 - Validate -> ensures protocol compliance.
 - Governance -> ensures trust, provenance, and policy consistency.
@@ -366,11 +377,13 @@ mimir governance --json
 | Command | Role | Description | Example |
 | --- | --- | --- | --- |
 | `mimir init` | Provider | Initialize APS support in package metadata. | `mimir init` |
+| `mimir author` | Provider | Create missing human-knowledge templates without overwriting existing files. | `mimir author --dry-run` |
 | `mimir generate` | Provider | Generate APS resources from available evidence. | `mimir generate --force` |
 | `mimir discover` | Consumer | Discover APS-enabled dependencies/providers. | `mimir discover` |
 | `mimir validate` | Both | Validate APS manifest and declared resources. | `mimir validate` |
 | `mimir governance` | Provider | Validate provenance, evidence, lifecycle, applicability and policy consistency metadata. | `mimir governance --json` |
 | `mimir doctor` | Provider | Evaluate provider maturity (L0-L3). | `mimir doctor --json` |
+| `mimir context` | Consumer | Generate local AI-agent context from discovered providers. | `mimir context --dry-run` |
 | `mimir sync` | Consumer | Synchronize discovered APS knowledge to configured consumer adapters. | `mimir sync` |
 | `mimir about` | Both | Show APS Protocol overview, workflows, and references. | `mimir about --json` |
 | `mimir help` | Both | Show command help and usage. | `mimir help governance` |
@@ -380,8 +393,8 @@ mimir governance --json
 
 | Group | Commands |
 | --- | --- |
-| Provider Commands | `init`, `generate`, `validate`, `governance`, `doctor` |
-| Consumer Commands | `discover`, `sync` |
+| Provider Commands | `init`, `author`, `generate`, `validate`, `governance`, `doctor` |
+| Consumer Commands | `discover`, `context`, `sync` |
 | Utility Commands | `help`, `about`, `completion` |
 
 ## Doctor
@@ -441,6 +454,9 @@ Documentation provides context and intent, while APS provides interoperable, mac
 - [x] Validation
 - [x] Governance
 - [x] Generate v1
+- [x] Human knowledge authoring
+- [x] Context generation
+- [x] Adapter sync
 
 ### Reference Providers
 

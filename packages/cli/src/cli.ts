@@ -12,6 +12,7 @@ import { registerCompletionCommand } from "./dx/completion/command";
 import { CLI_BINARY_NAME, CLI_PROTOCOL_NAME } from "./dx/branding/constants";
 import { registerAboutCommand } from "./dx/about/command";
 import { configureRuntimeOptions } from "./dx/runtime/options";
+import { registerAuthorCommand } from "./commands/author";
 
 export async function runCli(argv: string[]): Promise<void> {
   configureRuntimeOptions(argv);
@@ -33,6 +34,7 @@ export async function runCli(argv: string[]): Promise<void> {
   program.helpCommand(false);
 
   registerInitCommand(program);
+  registerAuthorCommand(program);
   registerDiscoverCommand(program);
   registerContextCommand(program);
   registerValidateCommand(program);

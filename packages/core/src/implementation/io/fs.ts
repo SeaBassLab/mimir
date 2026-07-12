@@ -23,6 +23,20 @@ export async function writeText(filePath: string, content: string): Promise<void
   await writeFile(filePath, content, "utf8");
 }
 
+export async function writeTextIfMissing(filePath: string, content: string): Promise<boolean> {
+  await ensureDir(path.dirname(filePath));
+
+  try {
+    await writeFile(filePath, content, { encoding: "utf8", flag: "wx" });
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+      return false;
+    }
+    throw error;
+  }
+}
+
 export async function readJson<T>(filePath: string): Promise<T> {
   const raw = await readText(filePath);
 

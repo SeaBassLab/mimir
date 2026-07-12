@@ -42,6 +42,25 @@ const COMMANDS: DxCommandMeta[] = [
     subcommands: []
   },
   {
+    name: "author",
+    description: "Create human knowledge authoring files for discovered APS resources",
+    usage: `${cliCommand("author")} [--json] [--dry-run]`,
+    examples: [cliCommand("author"), `${cliCommand("author")} --dry-run`, `${cliCommand("author")} --json`],
+    flags: [
+      { name: "--json", description: "Emit deterministic machine-readable authoring result." },
+      { name: "--dry-run", description: "Show missing authoring files without creating them." }
+    ],
+    aliases: [],
+    hidden: false,
+    category: "workflow",
+    notes: ["Creates missing YAML files and never modifies existing authoring content."],
+    exitCodes: [
+      { code: 0, meaning: "Authoring files created or already present." },
+      { code: 1, meaning: "Resource discovery or authoring failed." }
+    ],
+    subcommands: []
+  },
+  {
     name: "generate",
     description: "Generate APS resources from package evidence",
     usage: `${cliCommand("generate")} [--json] [--force]`,
@@ -209,6 +228,7 @@ const COMMANDS: DxCommandMeta[] = [
     ],
     subcommands: [
       "init",
+      "author",
       "generate",
       "discover",
       "validate",

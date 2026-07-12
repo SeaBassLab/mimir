@@ -6,6 +6,8 @@ export { runContextWorkflow } from "./implementation/services/context-service";
 export { runSyncWorkflow } from "./implementation/services/sync-service";
 export { prepareApsConfig } from "./implementation/services/init-service";
 export { runGovernanceValidation } from "./implementation/services/governance-service";
+export { runAuthoringWorkflow } from "./implementation/services/authoring-service";
+export type { AuthoringReport } from "./implementation/services/authoring-service";
 export { registerAdapter, getAdapter, getConfiguredAdapters } from "./implementation/adapters";
 export type { AgentAdapter, AgentContext, SyncResult } from "./implementation/adapters";
 export { registerGenerator, resolveGenerator } from "./implementation/generators";
