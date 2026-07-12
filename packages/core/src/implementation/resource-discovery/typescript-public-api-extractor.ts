@@ -74,11 +74,11 @@ function extractDefaultValuesFromParameter(parameter: ts.ParameterDeclaration): 
       continue;
     }
 
-    const propName = ts.isIdentifier(element.propertyName)
-      ? element.propertyName.text
-      : ts.isStringLiteral(element.propertyName)
-      ? element.propertyName.text
-      : element.name.text;
+    const propertyName = element.propertyName;
+    const propName =
+      propertyName && (ts.isIdentifier(propertyName) || ts.isStringLiteral(propertyName))
+        ? propertyName.text
+        : element.name.text;
 
     defaults.set(propName, defaultValue);
   }
@@ -106,7 +106,10 @@ function typeDisplay(checker: ts.TypeChecker, type: ts.Type): string {
   return checker.typeToString(type, undefined, ts.TypeFormatFlags.NoTruncation);
 }
 
-function literalFromType(type: ts.Type): string | number | boolean | null | undefined {
+function literalFromType(
+  checker: ts.TypeChecker,
+  type: ts.Type
+): string | number | boolean | null | undefined {
   if (type.flags & ts.TypeFlags.StringLiteral) {
     return (type as ts.StringLiteralType).value;
   }
@@ -116,9 +119,7 @@ function literalFromType(type: ts.Type): string | number | boolean | null | unde
   }
 
   if (type.flags & ts.TypeFlags.BooleanLiteral) {
-    return (type.flags & ts.TypeFlags.BooleanLiteral) && (type as ts.IntrinsicType).intrinsicName === "true"
-      ? true
-      : false;
+    return checker.typeToString(type) === "true";
   }
 
   if (type.flags & ts.TypeFlags.Null) {
@@ -134,7 +135,7 @@ function serializeType(checker: ts.TypeChecker, type: ts.Type): PublicApiTypeDes
   if (type.isUnion()) {
     const values: Array<string | number | boolean | null> = [];
     for (const candidate of type.types) {
-      const literalValue = literalFromType(candidate);
+      const literalValue = literalFromType(checker, candidate);
       if (literalValue === undefined) {
         return {
           kind: "reference",
@@ -152,7 +153,7 @@ function serializeType(checker: ts.TypeChecker, type: ts.Type): PublicApiTypeDes
     };
   }
 
-  const literalValue = literalFromType(type);
+  const literalValue = literalFromType(checker, type);
   if (literalValue !== undefined) {
     return {
       kind: "literal",
