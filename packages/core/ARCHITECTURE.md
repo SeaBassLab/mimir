@@ -75,6 +75,10 @@ in `auto.api.members` (access paths and widened types), not their resolved
 literal values. Extraction is bounded to four levels and 200 members per
 resource so palettes, spacing scales, breakpoints, and public constant
 namespaces remain useful without unbounded descriptor growth.
+The TypeChecker is authoritative when it exposes a useful shape. A bounded AST
+fallback covers direct literals, aliases, spreads, `as const`, `satisfies`,
+`Object.freeze`, `Object.assign`, shorthand properties, and arrays when the
+declared type collapses to `any` or otherwise loses member information.
 
 Providers declare the predicates they require and produce. The engine validates
 those dependencies while preserving one shared workspace.

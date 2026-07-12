@@ -482,6 +482,53 @@ function appendMemberPath(parent: string, name: string): string {
   return `${parent}[${JSON.stringify(name)}]`;
 }
 
+function staticPropertyName(name: ts.PropertyName): string | undefined {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text;
+  }
+  if (ts.isComputedPropertyName(name)) {
+    const value = toStaticLiteralValue(name.expression);
+    return typeof value === "string" || typeof value === "number" ? String(value) : undefined;
+  }
+  return undefined;
+}
+
+function unwrapSurfaceExpression(expression: ts.Expression): ts.Expression {
+  let current = expression;
+  while (
+    ts.isParenthesizedExpression(current) ||
+    ts.isAsExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    ts.isSatisfiesExpression(current) ||
+    ts.isNonNullExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+function surfaceType(
+  checker: ts.TypeChecker,
+  type: ts.Type,
+  expression?: ts.Expression
+): PublicApiTypeDescriptor {
+  const descriptor = serializeType(checker, checker.getBaseTypeOfLiteralType(type));
+  if (descriptor.kind !== "unknown" || (descriptor.display !== "any" && descriptor.display !== "unknown")) {
+    return descriptor;
+  }
+  if (expression) {
+    const unwrapped = unwrapSurfaceExpression(expression);
+    if (ts.isStringLiteralLike(unwrapped) || ts.isTemplateExpression(unwrapped)) {
+      return { kind: "primitive", name: "string" };
+    }
+    if (ts.isNumericLiteral(unwrapped)) return { kind: "primitive", name: "number" };
+    if (unwrapped.kind === ts.SyntaxKind.TrueKeyword || unwrapped.kind === ts.SyntaxKind.FalseKeyword) {
+      return { kind: "primitive", name: "boolean" };
+    }
+  }
+  return descriptor;
+}
+
 function extractObjectMembers(
   checker: ts.TypeChecker,
   symbol: ts.Symbol,
@@ -494,13 +541,20 @@ function extractObjectMembers(
     return [];
   }
 
-  const members: PublicApiMember[] = [];
+  const members = new Map<string, PublicApiMember>();
+  const addMember = (member: PublicApiMember): void => {
+    if (members.size >= maxMembers && !members.has(member.path)) return;
+    const current = members.get(member.path);
+    const currentIsUnknown = current?.type.kind === "unknown";
+    const nextIsKnown = member.type.kind !== "unknown";
+    if (!current || (currentIsUnknown && nextIsKnown)) members.set(member.path, member);
+  };
   const activeTypes = new Set<ts.Type>();
   const visit = (type: ts.Type, parent: string, depth: number): void => {
-    if (members.length >= maxMembers || activeTypes.has(type)) return;
+    if (members.size >= maxMembers || activeTypes.has(type)) return;
     activeTypes.add(type);
     for (const property of checker.getPropertiesOfType(type)) {
-      if (members.length >= maxMembers) break;
+      if (members.size >= maxMembers) break;
       const propertyDeclaration = property.valueDeclaration ?? property.declarations?.[0] ?? declaration;
       const propertyType = checker.getTypeOfSymbolAtLocation(property, propertyDeclaration);
       const path = appendMemberPath(parent, property.getName());
@@ -517,9 +571,9 @@ function extractObjectMembers(
       }
 
       const description = ts.displayPartsToString(property.getDocumentationComment(checker)).trim();
-      members.push({
+      addMember({
         path,
-        type: serializeType(checker, checker.getBaseTypeOfLiteralType(propertyType)),
+        type: surfaceType(checker, propertyType),
         description: description || undefined
       });
     }
@@ -527,7 +581,102 @@ function extractObjectMembers(
   };
 
   visit(rootType, "", 1);
-  return members.sort((a, b) => a.path.localeCompare(b.path));
+
+  const activeSymbols = new Set<ts.Symbol>();
+  const initializerForSymbol = (candidate: ts.Symbol): ts.Expression | undefined => {
+    const resolved = (candidate.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(candidate) : candidate;
+    if (activeSymbols.has(resolved)) return undefined;
+    const valueDeclaration = resolved.valueDeclaration ?? resolved.declarations?.[0];
+    if (valueDeclaration && ts.isVariableDeclaration(valueDeclaration)) return valueDeclaration.initializer;
+    if (valueDeclaration && ts.isPropertyAssignment(valueDeclaration)) return valueDeclaration.initializer;
+    if (valueDeclaration && ts.isPropertyDeclaration(valueDeclaration)) return valueDeclaration.initializer;
+    if (valueDeclaration && ts.isExportAssignment(valueDeclaration)) return valueDeclaration.expression;
+    if (valueDeclaration && ts.isShorthandPropertyAssignment(valueDeclaration)) {
+      return valueDeclaration.name;
+    }
+    return undefined;
+  };
+
+  const visitExpression = (raw: ts.Expression, parent: string, depth: number): boolean => {
+    if (members.size >= maxMembers) return false;
+    const expression = unwrapSurfaceExpression(raw);
+    if (depth > maxDepth) return false;
+
+    if (ts.isIdentifier(expression)) {
+      const candidate = checker.getSymbolAtLocation(expression);
+      if (!candidate) return false;
+      const resolved = (candidate.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(candidate) : candidate;
+      const initializer = initializerForSymbol(resolved);
+      if (!initializer) return false;
+      activeSymbols.add(resolved);
+      const expanded = visitExpression(initializer, parent, depth);
+      activeSymbols.delete(resolved);
+      return expanded;
+    }
+
+    if (ts.isCallExpression(expression)) {
+      const callName = expression.expression.getText();
+      if (/^(Object\.)?(freeze|seal)$/.test(callName) && expression.arguments[0]) {
+        return visitExpression(expression.arguments[0], parent, depth);
+      }
+      if (callName === "Object.assign") {
+        let expanded = false;
+        for (const argument of expression.arguments) {
+          expanded = visitExpression(argument, parent, depth) || expanded;
+        }
+        return expanded;
+      }
+      return false;
+    }
+
+    if (ts.isArrayLiteralExpression(expression)) {
+      expression.elements.forEach((element, index) => {
+        if (!ts.isExpression(element) || members.size >= maxMembers) return;
+        const path = `${parent}[${index}]`;
+        if (!visitExpression(element, path, depth + 1)) {
+          addMember({ path, type: surfaceType(checker, checker.getTypeAtLocation(element), element) });
+        }
+      });
+      return true;
+    }
+
+    if (!ts.isObjectLiteralExpression(expression)) return false;
+    for (const property of expression.properties) {
+      if (members.size >= maxMembers) break;
+      if (ts.isSpreadAssignment(property)) {
+        visitExpression(property.expression, parent, depth);
+        continue;
+      }
+      if (ts.isPropertyAssignment(property)) {
+        const name = staticPropertyName(property.name);
+        if (!name) continue;
+        const path = appendMemberPath(parent, name);
+        if (!visitExpression(property.initializer, path, depth + 1)) {
+          addMember({
+            path,
+            type: surfaceType(checker, checker.getTypeAtLocation(property.initializer), property.initializer)
+          });
+        }
+        continue;
+      }
+      if (ts.isShorthandPropertyAssignment(property)) {
+        const path = appendMemberPath(parent, property.name.text);
+        if (!visitExpression(property.name, path, depth + 1)) {
+          addMember({ path, type: surfaceType(checker, checker.getTypeAtLocation(property.name), property.name) });
+        }
+        continue;
+      }
+      if (ts.isMethodDeclaration(property) || ts.isGetAccessorDeclaration(property)) {
+        const name = staticPropertyName(property.name);
+        if (name) addMember({ path: appendMemberPath(parent, name), type: surfaceType(checker, checker.getTypeAtLocation(property)) });
+      }
+    }
+    return true;
+  };
+
+  const rootInitializer = initializerForSymbol(symbol);
+  if (rootInitializer) visitExpression(rootInitializer, "", 1);
+  return [...members.values()].sort((a, b) => a.path.localeCompare(b.path));
 }
 
 function buildLegacyProps(publicProps: PublicApiProp[]): Record<string, ExtractedProp> {
