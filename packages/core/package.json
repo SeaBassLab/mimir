@@ -5,9 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist",
-    "README.md",
-    "package.json"
+    "dist"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json"
@@ -22,6 +20,15 @@
     "node": ">=18"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SeaBassLab/mimir.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/SeaBassLab/mimir#readme",
+  "bugs": {
+    "url": "https://github.com/SeaBassLab/mimir/issues"
+  },
   "devDependencies": {
     "@types/node": "^22.10.1",
     "typescript": "^5.7.2"
@@ -29,6 +36,8 @@
   "keywords": [
     "aps",
     "protocol",
-    "software-knowledge"
+    "software-knowledge",
+    "metadata",
+    "interoperability"
   ]
 }

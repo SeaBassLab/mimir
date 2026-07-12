@@ -3,11 +3,7 @@
   "version": "0.1.0",
   "description": "Mimir CLI, the reference implementation for the APS Protocol",
   "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "package.json",
-    "CHANGELOG.md"
+    "dist"
   ],
   "main": "dist/index.js",
   "bin": {
@@ -23,9 +19,21 @@
   },
   "types": "dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SeaBassLab/mimir.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/SeaBassLab/mimir#readme",
+  "bugs": {
+    "url": "https://github.com/SeaBassLab/mimir/issues"
+  },
   "dependencies": {
     "@mimir/core": "workspace:*",
     "commander": "^12.1.0"
@@ -35,11 +43,11 @@
     "typescript": "^5.7.2"
   },
   "keywords": [
+    "mimir",
     "aps",
     "protocol",
-    "software-knowledge",
-    "ai",
     "cli",
-    "mimir"
+    "ai",
+    "software-knowledge"
   ]
 }
