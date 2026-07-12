@@ -1,8 +1,9 @@
 # Mimir CLI
 
-Reference implementation CLI for APS Protocol.
+Mimir is a Software Knowledge Engine that discovers, structures, and publishes
+software knowledge through APS. This package exposes its command-line workflows.
 
-[![npm version](https://img.shields.io/npm/v/%40mimir%2Fcli.svg)](https://www.npmjs.com/package/%40mimir/cli)
+[![npm version](https://img.shields.io/npm/v/%40mimir-labs%2Fcli.svg)](https://www.npmjs.com/package/%40mimir-labs/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -72,18 +73,32 @@ That knowledge is spread across:
 
 APS gives software a single, structured, machine-readable representation of that knowledge.
 
+Mimir is the engine that constructs that knowledge. APS is the independent
+publication protocol: Mimir discovers and structures facts; APS makes selected
+knowledge interoperable for consumers.
+
 ## Conceptual Model
 
 ```text
-Source Code --mimir author--> Author Knowledge (*.mimir.yaml descriptors)
-   |                                      |
-   +-------------------+------------------+
-           |
-           v
-         mimir generate
-           |
-           v
-    APS Knowledge Base (APS Manifest + Resources)
+Source Code + Storybook + Tooling Evidence
+                    |
+                    v
+       Mimir Knowledge Providers
+                    |
+                    v
+       In-memory Knowledge Graph
+                    |
+                    v
+         Persistence Policy
+                    |
+                    v
+ Author Knowledge (*.mimir.yaml descriptors)
+                    |
+                    v
+              mimir generate
+                    |
+                    v
+     APS Knowledge Base (Manifest + Resources)
          |                          |
          |                          +--> mimir validate / governance / doctor
          |
@@ -188,7 +203,7 @@ mimir doctor
 Step summary:
 
 - `mimir init`: prepares APS configuration in package metadata.
-- `mimir author`: synchronizes descriptor `auto` blocks from project evidence and preserves `human` blocks.
+- `mimir author`: builds the software Knowledge Graph, applies the Persistence Policy, synchronizes descriptor `auto` blocks, and preserves `human` blocks.
 - `mimir generate`: compiles APS resources exclusively from `*.mimir.yaml` descriptors.
 - `mimir validate`: verifies APS structural compliance.
 - `mimir governance`: validates governance metadata and policy consistency.
@@ -201,29 +216,31 @@ Descriptor-first workflow notes:
 
 - Mimir no longer depends on a fixed source root such as `src`.
 - `mimir init` is bootstrap-only and does not discover resources or create descriptors.
-- `mimir author` discovers resources, creates missing descriptors, and refreshes only `auto` fields.
+- `mimir author` runs Knowledge Providers over one shared workspace, applies the Persistence Policy, creates missing descriptors, and refreshes only `auto` fields.
 - `mimir generate` reads only `*.mimir.yaml` descriptors as the provider contract source.
 
-Minimal descriptor shape:
+Current descriptor shape (schema v2):
 
 ```yaml
-schemaVersion: 1
-resources:
-  - kind: component
-    name: "Button"
-    id: "@acme/ui.component.button"
-    auto:
-      source:
-        file: "app/ui/Button.tsx"
-        symbol: "Button"
-        public: true
-      props: []
-      variants: []
-      storyFiles: []
-    human:
-      description: ""
-      whenToUse: []
-      whenNotToUse: []
+schemaVersion: 2
+kind: component
+name: Button
+id: acme.ui.component.button
+auto:
+  source:
+    file: app/ui/Button.tsx
+    symbol: Button
+    public: true
+  props: [] # Backward-compatible projection of auto.api.props
+  api: { props: [], events: [], slots: [], methods: [], refs: [] }
+  relationships: []
+  examples: []
+  variants: []
+  storyFiles: []
+human:
+  description: ""
+  whenToUse: []
+  whenNotToUse: []
 ```
 
 `mimir generate` composes completed `description`, `whenToUse`, and
@@ -308,8 +325,8 @@ mimir init
 
 Why each step exists:
 
-- Author -> discovers resources, creates missing descriptors, and synchronizes only `auto` fields while preserving `human` authoring.
-- Author -> updates only descriptor `auto` fields and preserves `human` authoring.
+- Author -> builds the in-memory Knowledge Graph and delegates retention decisions to the Persistence Policy.
+- Author -> creates missing descriptors, updates only descriptor `auto` fields, and preserves `human` authoring.
 - Generate -> compiles descriptor-authored knowledge into machine-readable APS artifacts.
 - Validate -> ensures protocol compliance.
 - Governance -> ensures trust, provenance, and policy consistency.

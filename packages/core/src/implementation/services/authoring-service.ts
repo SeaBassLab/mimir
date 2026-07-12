@@ -1,23 +1,21 @@
 import path from "node:path";
 import { parse, stringify } from "yaml";
-import { extractStorybookFacts } from "../resource-discovery/storybook-extractor";
-import { discoverTypeScriptResources } from "../resource-discovery/typescript-extractor";
-import {
-  extractTypeScriptPublicApi,
-  getComponentPublicApiKey
-} from "../resource-discovery/typescript-public-api-extractor";
+import { buildKnowledgeGraph, createKnowledgeWorkspace } from "../knowledge/knowledge-engine";
+import { DescriptorPersistencePolicy, type PersistentResourceKnowledge } from "../knowledge/persistence-policy";
 import type {
-  DiscoveredResourceFact,
-  ExtractedComponentFact,
   ExtractedProp,
   PublicComponentApi,
   ResourceClassification,
-  SemanticResourceKind
+  SemanticResourceKind,
+  ExtractedRelationship,
+  ExtractedExample,
+  ExtractedReactPatterns,
+  ExtractionMetadata
 } from "../contracts/resource";
 import { discoverDescriptorFiles } from "../descriptors/descriptor-discovery";
 import { deleteFile, fileExists, readJson, readText, writeText } from "../io/fs";
 import { isObject } from "../io/json";
-import { createComponentResourceId } from "../resource-identity";
+import { createResourceId } from "../resource-identity";
 
 type PackageJson = {
   name?: unknown;
@@ -48,6 +46,7 @@ export type AuthoringReport = {
 
 type AutoSeed = {
   name: string;
+  kind: SemanticResourceKind;
   id: string;
   sourceFile: string;
   props: Record<string, ExtractedProp>;
@@ -55,6 +54,10 @@ type AutoSeed = {
   classification: ResourceClassification;
   variants: string[];
   storyFiles: string[];
+  relationships: ExtractedRelationship[];
+  examples: ExtractedExample[];
+  react: ExtractedReactPatterns;
+  metadata: ExtractionMetadata;
 };
 
 type AuthoringPackageMetadata = {
@@ -133,7 +136,7 @@ function toPropsArray(props: Record<string, ExtractedProp>): Array<{ name: strin
     }));
 }
 
-function buildManagedAutoBlock(seed: AutoSeed): Record<string, unknown> {
+function buildPersistedAutoBlock(seed: AutoSeed): Record<string, unknown> {
   return {
     source: {
       file: seed.sourceFile,
@@ -152,23 +155,27 @@ function buildManagedAutoBlock(seed: AutoSeed): Record<string, unknown> {
       },
     classification: seed.classification,
     variants: [...new Set(seed.variants)].sort((a, b) => a.localeCompare(b)),
-    storyFiles: [...new Set(seed.storyFiles)].sort((a, b) => a.localeCompare(b))
+    storyFiles: [...new Set(seed.storyFiles)].sort((a, b) => a.localeCompare(b)),
+    relationships: seed.relationships,
+    examples: seed.examples,
+    react: seed.react,
+    ai: seed.metadata
   };
 }
 
 function patchManagedResourceAuto(existing: DescriptorResourceDocument, seed: AutoSeed): Record<string, unknown> {
   return {
     ...existing,
-    auto: buildManagedAutoBlock(seed)
+    auto: buildPersistedAutoBlock(seed)
   };
 }
 
 function createManagedResource(seed: AutoSeed): Record<string, unknown> {
   return {
-    kind: "component",
+    kind: seed.kind,
     name: seed.name,
     id: seed.id,
-    auto: buildManagedAutoBlock(seed),
+    auto: buildPersistedAutoBlock(seed),
     human: {
       description: "",
       whenToUse: [],
@@ -295,25 +302,28 @@ async function loadExistingDescriptorEntries(cwd: string, relativePath: string):
 }
 
 function toManagedSeeds(
-  resources: DiscoveredResourceFact[],
-  storybookFacts: Awaited<ReturnType<typeof extractStorybookFacts>>,
-  publicApis: Awaited<ReturnType<typeof extractTypeScriptPublicApi>>
+  knowledge: PersistentResourceKnowledge[]
 ): AutoSeed[] {
   const byId = new Map<string, AutoSeed>();
 
-  for (const resource of resources) {
-    const publicApi = publicApis.get(getComponentPublicApiKey(resource));
-    const id = createComponentResourceId(resource.packageName, resource.name);
+  for (const item of knowledge) {
+    const resource = item.resource;
+    const id = createResourceId(resource.packageName, resource.classification.kind, resource.name);
 
     byId.set(id, {
       name: resource.name,
+      kind: resource.classification.kind,
       id,
       sourceFile: normalizeSlashes(resource.filePath),
-      props: publicApi?.props ?? {},
-      api: publicApi?.api,
+      props: item.props,
+      api: item.api,
       classification: resource.classification,
-      variants: storybookFacts.variantsByComponent[resource.name] ?? [],
-      storyFiles: storybookFacts.storyFilesByComponent[resource.name] ?? []
+      variants: item.variants,
+      storyFiles: item.storyFiles,
+      relationships: item.relationships,
+      examples: item.examples,
+      react: item.react,
+      metadata: item.metadata
     });
   }
 
@@ -328,25 +338,12 @@ export async function runAuthoringWorkflow(
   const shouldDeleteOrphans = options.deleteOrphans === true;
 
   const packageMetadata = await readPackageMetadata(cwd);
-  const discoveredResources = await discoverTypeScriptResources(cwd, packageMetadata.packageName, {
+  const workspace = await createKnowledgeWorkspace(cwd, packageMetadata.packageName, {
     includeKinds: packageMetadata.discovery.includeKinds,
     excludeKinds: packageMetadata.discovery.excludeKinds
   });
-  const resourcesForAuthoring = discoveredResources.filter((resource) => resource.classification.generateDescriptor);
-  const authoringResourceFacts: ExtractedComponentFact[] = resourcesForAuthoring.map((resource) => ({
-    name: resource.name,
-    filePath: resource.filePath,
-    importName: resource.importName,
-    packageName: resource.packageName,
-    props: {}
-  }));
-
-  const [storybookFacts, publicApis] = await Promise.all([
-    extractStorybookFacts(cwd),
-    extractTypeScriptPublicApi(cwd, authoringResourceFacts)
-  ]);
-
-  const seeds = toManagedSeeds(resourcesForAuthoring, storybookFacts, publicApis);
+  const graph = await buildKnowledgeGraph(workspace);
+  const seeds = toManagedSeeds(new DescriptorPersistencePolicy().select(graph));
   const existingDescriptorFiles = await discoverDescriptorFiles(cwd);
   const existingEntries: ExistingDescriptorResource[] = [];
 
@@ -497,7 +494,7 @@ export async function runAuthoringWorkflow(
 
   return {
     outputDir: ".",
-    discoveredResources: resourcesForAuthoring.length,
+    discoveredResources: seeds.length,
     createdFiles: [...new Set(createdFiles)].sort((a, b) => a.localeCompare(b)),
     updatedFiles: [...new Set(updatedFiles)].sort((a, b) => a.localeCompare(b)),
     existingFiles: [...new Set(existingFiles)].sort((a, b) => a.localeCompare(b)),

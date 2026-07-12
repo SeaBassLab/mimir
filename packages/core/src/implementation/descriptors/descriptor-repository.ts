@@ -3,7 +3,15 @@ import { parse } from "yaml";
 import { readText } from "../io/fs";
 import { isObject } from "../io/json";
 import type { MimirDescriptorLoadResult, MimirResourceDescriptor } from "../contracts/descriptor";
-import type { ExtractedProp } from "../contracts/resource";
+import type {
+  ExtractedExample,
+  ExtractedProp,
+  ExtractedReactPatterns,
+  ExtractedRelationship,
+  ExtractionMetadata,
+  PublicComponentApi,
+  ResourceClassification
+} from "../contracts/resource";
 import { discoverDescriptorFiles } from "./descriptor-discovery";
 
 const SUPPORTED_KINDS = new Set([
@@ -143,8 +151,14 @@ function readResource(
     auto: {
       source,
       props,
+      api: isObject(autoNode.api) ? autoNode.api as unknown as PublicComponentApi : undefined,
+      classification: isObject(autoNode.classification) ? autoNode.classification as unknown as ResourceClassification : undefined,
       variants,
-      storyFiles
+      storyFiles,
+      relationships: Array.isArray(autoNode.relationships) ? autoNode.relationships as ExtractedRelationship[] : undefined,
+      examples: Array.isArray(autoNode.examples) ? autoNode.examples as ExtractedExample[] : undefined,
+      react: isObject(autoNode.react) ? autoNode.react as unknown as ExtractedReactPatterns : undefined,
+      ai: isObject(autoNode.ai) ? autoNode.ai as unknown as ExtractionMetadata : undefined
     },
     human: {
       description:

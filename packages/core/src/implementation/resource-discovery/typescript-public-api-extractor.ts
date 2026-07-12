@@ -7,6 +7,7 @@ import type {
   PublicApiTypeDescriptor,
   PublicComponentApi
 } from "../contracts/resource";
+import { createTypeScriptAnalysis, type TypeScriptAnalysis } from "./typescript-analysis";
 
 type ExtractedPublicApiFact = {
   name: string;
@@ -485,28 +486,14 @@ function buildLegacyProps(publicProps: PublicApiProp[]): Record<string, Extracte
 
 export async function extractTypeScriptPublicApi(
   cwd: string,
-  components: ExtractedComponentFact[]
+  components: ExtractedComponentFact[],
+  analysis?: TypeScriptAnalysis
 ): Promise<Map<string, ExtractedPublicApiFact>> {
-  const programRoots = [...new Set(components.map((component) => path.join(cwd, component.filePath)))];
-  if (programRoots.length === 0) {
+  if (components.length === 0) {
     return new Map<string, ExtractedPublicApiFact>();
   }
-
-  const compilerOptions: ts.CompilerOptions = {
-    target: ts.ScriptTarget.ES2022,
-    module: ts.ModuleKind.CommonJS,
-    moduleResolution: ts.ModuleResolutionKind.NodeJs,
-    strict: true,
-    jsx: ts.JsxEmit.ReactJSX,
-    skipLibCheck: true,
-    esModuleInterop: true,
-    allowJs: false,
-    allowSyntheticDefaultImports: true,
-    resolveJsonModule: true
-  };
-
-  const program = ts.createProgram(programRoots, compilerOptions);
-  const checker = program.getTypeChecker();
+  const resolvedAnalysis = analysis ?? (await createTypeScriptAnalysis(cwd));
+  const { program, checker } = resolvedAnalysis;
 
   const sourceByRelativePath = new Map<string, ts.SourceFile>();
   for (const sourceFile of program.getSourceFiles()) {

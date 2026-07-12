@@ -1,4 +1,12 @@
-import type { ExtractedProp, PublicComponentApi, ResourceClassification } from "./resource";
+import type {
+  ExtractedExample,
+  ExtractedProp,
+  ExtractedReactPatterns,
+  ExtractedRelationship,
+  ExtractionMetadata,
+  PublicComponentApi,
+  ResourceClassification
+} from "./resource";
 
 export type MimirResourceDescriptor = {
   kind: string;
@@ -15,6 +23,10 @@ export type MimirResourceDescriptor = {
     classification?: ResourceClassification;
     variants: string[];
     storyFiles: string[];
+    relationships?: ExtractedRelationship[];
+    examples?: ExtractedExample[];
+    react?: ExtractedReactPatterns;
+    ai?: ExtractionMetadata;
   };
   human: {
     description: string;

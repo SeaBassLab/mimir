@@ -1,6 +1,6 @@
 {
   "name": "mimir",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Reference implementation of the APS Protocol",
   "license": "MIT",

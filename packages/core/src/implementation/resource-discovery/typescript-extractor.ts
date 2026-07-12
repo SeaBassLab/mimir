@@ -1,5 +1,4 @@
 import path from "path";
-import { readdir } from "fs/promises";
 import ts from "typescript";
 import {
   classifyResource,
@@ -11,8 +10,7 @@ import type {
   ExtractedComponentFact,
   SemanticResourceKind
 } from "../contracts/resource";
-
-const TS_EXTENSIONS = new Set([".ts", ".tsx"]);
+import { createTypeScriptAnalysis, type TypeScriptAnalysis } from "./typescript-analysis";
 
 export type TypeScriptResourceDiscoveryOptions = {
   includeKinds?: SemanticResourceKind[];
@@ -21,28 +19,6 @@ export type TypeScriptResourceDiscoveryOptions = {
 
 function normalizeSlashes(value: string): string {
   return value.split(path.sep).join("/");
-}
-
-async function collectFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files: string[] = [];
-
-  for (const entry of entries) {
-    const absolutePath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith(".")) {
-        continue;
-      }
-      files.push(...(await collectFiles(absolutePath)));
-      continue;
-    }
-
-    if (entry.isFile() && TS_EXTENSIONS.has(path.extname(entry.name))) {
-      files.push(absolutePath);
-    }
-  }
-
-  return files;
 }
 
 function sourceFileHasModuleImport(sourceFile: ts.SourceFile, predicate: (modulePath: string) => boolean): boolean {
@@ -160,22 +136,11 @@ function shouldIgnoreSourceFile(sourceFile: ts.SourceFile, cwd: string): boolean
 export async function discoverTypeScriptResources(
   cwd: string,
   packageName: string,
-  options: TypeScriptResourceDiscoveryOptions = {}
+  options: TypeScriptResourceDiscoveryOptions = {},
+  analysis?: TypeScriptAnalysis
 ): Promise<DiscoveredResourceFact[]> {
-  const files = await collectFiles(cwd);
-  const program = ts.createProgram(files, {
-    target: ts.ScriptTarget.ES2022,
-    module: ts.ModuleKind.CommonJS,
-    moduleResolution: ts.ModuleResolutionKind.NodeJs,
-    strict: true,
-    jsx: ts.JsxEmit.ReactJSX,
-    skipLibCheck: true,
-    esModuleInterop: true,
-    allowSyntheticDefaultImports: true,
-    resolveJsonModule: true
-  });
-
-  const checker = program.getTypeChecker();
+  const resolvedAnalysis = analysis ?? (await createTypeScriptAnalysis(cwd));
+  const { program, checker } = resolvedAnalysis;
   const policy = mergeClassificationPolicy({
     include: options.includeKinds,
     exclude: options.excludeKinds

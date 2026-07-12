@@ -27,3 +27,10 @@ export function createComponentResourceId(packageName: string, componentName: st
   const name = sanitizeSegment(componentName) || "component";
   return `${org}.${pkg}.component.${name}`;
 }
+
+export function createResourceId(packageName: string, kind: string, resourceName: string): string {
+  const { org, pkg } = splitPackageName(packageName);
+  const normalizedKind = sanitizeSegment(kind) || "resource";
+  const name = sanitizeSegment(resourceName) || "resource";
+  return `${org}.${pkg}.${normalizedKind}.${name}`;
+}

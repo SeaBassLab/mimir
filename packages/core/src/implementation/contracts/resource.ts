@@ -96,4 +96,61 @@ export type DiscoveredResourceFact = {
 export type StorybookFacts = {
   variantsByComponent: Record<string, string[]>;
   storyFilesByComponent: Record<string, string[]>;
+  examplesByComponent: Record<string, ExtractedExample[]>;
+};
+
+export type RelationshipType =
+  | "imports"
+  | "exports"
+  | "uses"
+  | "composes"
+  | "dependsOn"
+  | "provides"
+  | "consumes"
+  | "references";
+
+export type ExtractedRelationship = {
+  type: RelationshipType;
+  target: string;
+  confidence: number;
+};
+
+export type StaticValue = string | number | boolean | null | StaticValue[] | { [key: string]: StaticValue };
+
+export type ExtractedExample = {
+  name: string;
+  source: { file: string };
+  story: string;
+  args?: Record<string, StaticValue>;
+  decorators?: string[];
+  play?: boolean;
+};
+
+export type DesignTokenCategory =
+  | "colors"
+  | "spacing"
+  | "typography"
+  | "radius"
+  | "shadows"
+  | "zIndex"
+  | "breakpoints";
+
+export type ExtractedDesignTokens = Partial<Record<DesignTokenCategory, Record<string, StaticValue>>>;
+
+export type ExtractedReactPatterns = {
+  forwardRef: boolean;
+  memo: boolean;
+  lazy: boolean;
+  suspense: boolean;
+  portal: boolean;
+  errorBoundary: boolean;
+  context: boolean;
+  provider: boolean;
+  customHook: boolean;
+};
+
+export type ExtractionMetadata = {
+  confidence?: number;
+  extractedAt?: string;
+  extractorVersion?: string;
 };
