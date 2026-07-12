@@ -1,6 +1,6 @@
 {
   "name": "mimir",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Reference implementation of the APS Protocol",
   "license": "MIT",
@@ -10,10 +10,10 @@
     "clean": "pnpm -r --if-present clean",
     "typecheck": "pnpm -r --if-present typecheck",
 
-    "start": "pnpm --filter @mimir/cli start",
+    "start": "pnpm --filter @mimir-labs/cli start",
 
-    "publish:core": "pnpm --filter @mimir/core publish --access public",
-    "publish:cli": "pnpm --filter @mimir/cli publish --access public"
+    "publish:core": "pnpm --filter @mimir-labs/core publish --access public",
+    "publish:cli": "pnpm --filter @mimir-labs/cli publish --access public"
   },
   "repository": {
     "type": "git",

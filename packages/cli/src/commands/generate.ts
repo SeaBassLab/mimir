@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { runGeneration } from "@mimir/core";
+import { runGeneration } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import path from "node:path";
 import {

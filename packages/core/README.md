@@ -1,4 +1,4 @@
-# @mimir/core
+# @mimir-labs/core
 
 Core business logic and reusable services for the Mimir CLI.
 

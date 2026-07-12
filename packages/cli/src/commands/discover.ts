@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { runDiscovery } from "@mimir/core";
+import { runDiscovery } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
   errorMessage,

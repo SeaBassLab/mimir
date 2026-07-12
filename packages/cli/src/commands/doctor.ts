@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { runDoctorAssessment } from "@mimir/core";
+import { runDoctorAssessment } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
   errorMessage,

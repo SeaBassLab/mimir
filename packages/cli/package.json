@@ -1,5 +1,5 @@
 {
-  "name": "@mimir/cli",
+  "name": "@mimir-labs/cli",
   "version": "0.1.0",
   "description": "Mimir CLI, the reference implementation for the APS Protocol",
   "files": [
@@ -16,6 +16,9 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "types": "dist/index.d.ts",
   "exports": {
@@ -35,7 +38,7 @@
     "url": "https://github.com/SeaBassLab/mimir/issues"
   },
   "dependencies": {
-    "@mimir/core": "workspace:*",
+    "@mimir-labs/core": "workspace:*",
     "commander": "^12.1.0"
   },
   "devDependencies": {

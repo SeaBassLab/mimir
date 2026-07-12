@@ -25,9 +25,9 @@ Register adapters through:
 
 Example target packages:
 
-- `@mimir/copilot`
-- `@mimir/cursor`
-- `@mimir/agents`
+- `@mimir-labs/copilot`
+- `@mimir-labs/cursor`
+- `@mimir-labs/agents`
 
 Steps:
 
@@ -57,8 +57,8 @@ Register generators through:
 
 Example target packages:
 
-- `@mimir/markdown`
-- `@mimir/json`
+- `@mimir-labs/markdown`
+- `@mimir-labs/json`
 
 Steps:
 

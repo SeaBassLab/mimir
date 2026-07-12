@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { runContextWorkflow } from "@mimir/core";
+import { runContextWorkflow } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
   errorMessage,

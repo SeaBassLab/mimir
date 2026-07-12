@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { runGovernanceValidation } from "@mimir/core";
+import { runGovernanceValidation } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
   errorMessage,

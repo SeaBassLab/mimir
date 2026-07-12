@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { prepareApsConfig } from "@mimir/core";
+import { prepareApsConfig } from "@mimir-labs/core";
 import { attachCommandHelp } from "../dx/help/attach-command-help";
 import {
   errorMessage,

@@ -153,13 +153,13 @@ Node.js 18+ is recommended.
 Global install:
 
 ```bash
-npm install -g @mimir/cli
+npm install -g @mimir-labs/cli
 ```
 
 Temporary execution:
 
 ```bash
-npx @mimir/cli --help
+npx @mimir-labs/cli --help
 ```
 
 ## Quick Start (Provider)

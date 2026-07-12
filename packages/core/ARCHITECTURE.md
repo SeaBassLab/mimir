@@ -2,7 +2,7 @@
 
 ## Namespace Split
 
-`@mimir/core` is split into two explicit namespaces:
+`@mimir-labs/core` is split into two explicit namespaces:
 
 - `src/protocol/*`: APS domain concepts and protocol logic.
 - `src/implementation/*`: runtime/infrastructure and implementation concerns.
