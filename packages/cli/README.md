@@ -75,22 +75,19 @@ APS gives software a single, structured, machine-readable representation of that
 ## Conceptual Model
 
 ```text
-Source Code                    mimir author
-      |                             |
-      v                             v
-mimir generate              aps/knowledge
-      |
-      v
-APS Knowledge Base
-(Manifest + Resources)
-      |
-  +---+---+---+
-  |   |   |   |
-  v   v   v   v
- IDE CI/CD AI Agents Runtime
-  |     |
-  v     v
-mimir sync Validation
+Source Code --mimir author--> Author Knowledge (aps/knowledge)
+   |                                      |
+   +-------------------+------------------+
+           |
+           v
+         mimir generate
+           |
+           v
+    APS Knowledge Base (APS Manifest + Resources)
+         |                          |
+         |                          +--> mimir validate / governance / doctor
+         |
+         +--> mimir discover -> mimir sync -> AGENTS / Copilot / Cursor adapters
 ```
 
 ## Core Concepts
@@ -99,7 +96,8 @@ mimir sync Validation
 | --- | --- | --- |
 | Knowledge Provider | Library or platform package | Publishes structured software knowledge. |
 | Consumer | Application or platform toolchain | Consumes knowledge published by providers. |
-| Manifest | Knowledge Provider | Entry point of a provider package. |
+| Author Knowledge | Knowledge Provider | Provider-authored source knowledge under `aps/knowledge` for intent that cannot be inferred automatically. |
+| APS Manifest | Knowledge Provider | Entry point of a provider package. |
 | Resource | Knowledge Provider | Knowledge unit such as a component, API, service, rule, or example. |
 | Governance | Knowledge Provider | Trust metadata covering provenance, evidence, lifecycle, applicability, and policy consistency. |
 | Adapter | Consumer environment | Converts APS knowledge into consumer-specific formats. |
@@ -190,8 +188,8 @@ mimir doctor
 Step summary:
 
 - `mimir init`: prepares APS configuration in package metadata.
-- `mimir author`: creates missing human-knowledge YAML templates under `aps/knowledge` without modifying existing files.
-- `mimir generate`: scans your project and creates an initial APS knowledge base from observable evidence such as TypeScript exports, Storybook metadata, and package information.
+- `mimir author`: creates missing Author Knowledge YAML templates under `aps/knowledge` without modifying existing files.
+- `mimir generate`: composes observable evidence (TypeScript exports, Storybook metadata, package information) with Author Knowledge from `aps/knowledge` into the APS Manifest and related resources.
 - `mimir validate`: verifies APS structural compliance.
 - `mimir governance`: validates governance metadata and policy consistency.
 - `mimir doctor`: evaluates maturity level before release.
@@ -199,8 +197,9 @@ Step summary:
 
 Complete the generated authoring templates manually or with an AI agent before generation when human intent is required. Mimir does not write that content.
 
-In this release, `author` prepares the source files only. Consuming them from
-`generate` is a separate pipeline integration.
+`mimir generate` composes completed `description`, `whenToUse`, and
+`whenNotToUse` fields into the APS Manifest. `mimir sync` projects those fields
+from the APS Manifest into the shared context used by all configured adapters.
 
 ## Example
 
@@ -215,7 +214,7 @@ dist/
     examples.json
 ```
 
-Minimal APS manifest example:
+Minimal APS Manifest example:
 
 ```json
 {
@@ -280,8 +279,8 @@ mimir init
 
 Why each step exists:
 
-- Author -> creates missing, version-controlled templates for human knowledge.
-- Generate -> creates machine-readable knowledge artifacts.
+- Author -> creates missing, version-controlled Author Knowledge templates for intent that cannot be inferred automatically.
+- Generate -> composes observable evidence and Author Knowledge into machine-readable APS artifacts.
 - Validate -> ensures protocol compliance.
 - Governance -> ensures trust, provenance, and policy consistency.
 - Doctor -> evaluates provider maturity and release readiness.
@@ -314,7 +313,7 @@ Install provider
 Important:
 
 - `mimir sync` is not part of provider publication.
-- `mimir sync` belongs to the consumer side and synchronizes knowledge to adapters such as AGENTS.md, Copilot Instructions, Cursor Rules, and future integrations.
+- `mimir sync` belongs to the consumer side and synchronizes knowledge from the APS Manifest to adapters such as AGENTS.md, Copilot Instructions, Cursor Rules, and future integrations.
 
 Example:
 
@@ -349,7 +348,7 @@ Found providers
 
 Typical checks include:
 
-- manifest shape
+- APS Manifest shape
 - JSON validity
 - resource declarations
 - reference integrity
@@ -377,14 +376,14 @@ mimir governance --json
 | Command | Role | Description | Example |
 | --- | --- | --- | --- |
 | `mimir init` | Provider | Initialize APS support in package metadata. | `mimir init` |
-| `mimir author` | Provider | Create missing human-knowledge templates without overwriting existing files. | `mimir author --dry-run` |
-| `mimir generate` | Provider | Generate APS resources from available evidence. | `mimir generate --force` |
+| `mimir author` | Provider | Create missing Author Knowledge templates without overwriting existing files. | `mimir author --dry-run` |
+| `mimir generate` | Provider | Compose APS resources from observable evidence and Author Knowledge. | `mimir generate --force` |
 | `mimir discover` | Consumer | Discover APS-enabled dependencies/providers. | `mimir discover` |
-| `mimir validate` | Both | Validate APS manifest and declared resources. | `mimir validate` |
+| `mimir validate` | Both | Validate APS Manifest and declared resources. | `mimir validate` |
 | `mimir governance` | Provider | Validate provenance, evidence, lifecycle, applicability and policy consistency metadata. | `mimir governance --json` |
 | `mimir doctor` | Provider | Evaluate provider maturity (L0-L3). | `mimir doctor --json` |
 | `mimir context` | Consumer | Generate local AI-agent context from discovered providers. | `mimir context --dry-run` |
-| `mimir sync` | Consumer | Synchronize discovered APS knowledge to configured consumer adapters. | `mimir sync` |
+| `mimir sync` | Consumer | Synchronize discovered APS Manifest knowledge to configured consumer adapters. | `mimir sync` |
 | `mimir about` | Both | Show APS Protocol overview, workflows, and references. | `mimir about --json` |
 | `mimir help` | Both | Show command help and usage. | `mimir help governance` |
 | `mimir completion` | Utility | Print shell completion scripts. | `mimir completion zsh` |
@@ -454,7 +453,7 @@ Documentation provides context and intent, while APS provides interoperable, mac
 - [x] Validation
 - [x] Governance
 - [x] Generate v1
-- [x] Human knowledge authoring
+- [x] Author Knowledge authoring
 - [x] Context generation
 - [x] Adapter sync
 

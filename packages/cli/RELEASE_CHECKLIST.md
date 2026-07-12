@@ -29,6 +29,12 @@
 ## Changelog
 - Document user-facing changes
 - Document migration notes and known limitations
+- 0.2.0 summary (if included in release notes):
+	- New `mimir author` command.
+	- Support for Author Knowledge in `aps/knowledge`.
+	- Full integration with `mimir generate`.
+	- Enriched consumer context via `mimir sync` from APS Manifest.
+	- No incompatible changes in APS Protocol.
 
 ## Example provider verification
 - Validate example provider structure and generated APS artifacts

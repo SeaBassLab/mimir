@@ -32,6 +32,14 @@ export function fromReadme(sourceRef: string): FieldEvidence {
   };
 }
 
+export function fromHumanKnowledge(sourceRef: string): FieldEvidence {
+  return {
+    sourceType: "human",
+    sourceRef,
+    confidence: "high"
+  };
+}
+
 export function missingHumanSource(fieldName: string): FieldEvidence {
   return {
     sourceType: "human",

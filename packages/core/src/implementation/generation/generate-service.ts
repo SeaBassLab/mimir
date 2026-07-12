@@ -9,6 +9,8 @@ import { extractTypeScriptComponents } from "./extractors/typescript-extractor";
 import { buildComponentResource } from "./resource-builders/component-builder";
 import { buildExamplesNotImplemented } from "./resource-builders/example-builder";
 import type { GenerateOutput, GenerateReport, GeneratedComponentResource } from "./types";
+import { loadComponentKnowledge } from "../authoring/knowledge-loader";
+import { createComponentResourceId } from "../resource-identity";
 
 type PackageJson = {
   name?: unknown;
@@ -113,8 +115,12 @@ export async function generateApsFromEvidence(
     extractReadmeFacts(cwd)
   ]);
 
-  const components = typescriptComponents.map((component) =>
-    buildComponentResource(component, storybookFacts, readmeFacts)
+  const components = await Promise.all(
+    typescriptComponents.map(async (component) => {
+      const resourceId = createComponentResourceId(component.packageName, component.name);
+      const authored = await loadComponentKnowledge(cwd, resourceId);
+      return buildComponentResource(component, storybookFacts, readmeFacts, authored);
+    })
   );
 
   const exampleResult = buildExamplesNotImplemented();

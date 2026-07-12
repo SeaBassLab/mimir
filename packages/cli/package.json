@@ -1,6 +1,6 @@
 {
   "name": "@mimir-labs/cli",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Mimir CLI, the reference implementation for the APS Protocol",
   "files": [
     "dist"
