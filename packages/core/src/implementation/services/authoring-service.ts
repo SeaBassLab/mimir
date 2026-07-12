@@ -210,13 +210,17 @@ export async function runAuthoringWorkflow(
 
   for (const relativePath of [...allDescriptorPaths].sort((a, b) => a.localeCompare(b))) {
     const filePath = path.join(cwd, relativePath);
-    const seeds = [...new Map((groupedDescriptors.get(relativePath) ?? []).map((item) => [item.id, item])).values()].sort(
+    const uniqueSeeds = new Map<string, AutoSeed>(
+      (groupedDescriptors.get(relativePath) ?? []).map((item): [string, AutoSeed] => [item.id, item])
+    );
+    const seeds = [...uniqueSeeds.values()].sort(
       (a, b) => a.name.localeCompare(b.name)
     );
-    const seedByIdentity = new Map<string, AutoSeed>([
-      ...seeds.map((seed) => [seed.id, seed]),
-      ...seeds.map((seed) => [`component:${seed.name}`, seed])
-    ]);
+    const seedByIdentityEntries: Array<[string, AutoSeed]> = [
+      ...seeds.map((seed): [string, AutoSeed] => [seed.id, seed]),
+      ...seeds.map((seed): [string, AutoSeed] => [`component:${seed.name}`, seed])
+    ];
+    const seedByIdentity = new Map<string, AutoSeed>(seedByIdentityEntries);
 
     let existingDoc: Record<string, unknown> = {
       schemaVersion: 1,
