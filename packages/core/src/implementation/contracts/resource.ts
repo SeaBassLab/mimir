@@ -72,10 +72,21 @@ export type PublicApiProp = {
 export type PublicComponentApi = {
   props: PublicApiProp[];
   members?: PublicApiMember[];
+  callSignatures?: PublicApiCallSignature[];
   events: unknown[];
   slots: unknown[];
   methods: unknown[];
   refs: unknown[];
+};
+
+export type PublicApiCallSignature = {
+  display: string;
+  parameters: Array<{
+    name: string;
+    type: PublicApiTypeDescriptor;
+    required: boolean;
+  }>;
+  returns: PublicApiTypeDescriptor;
 };
 
 export type PublicApiMember = {

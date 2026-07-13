@@ -9,8 +9,8 @@ export const cursorAdapter: AgentAdapter = {
     const { changed, created } = await upsertManagedSection(targetPath, [
       "# APS Context",
       "",
-      "Read generated APS knowledge:",
-      "- .agents/aps/index.md"
+      "Before using an installed library, read .agents/aps/index.md and follow its intent routing.",
+      "Treat published imports and APIs as authoritative; do not invent unavailable knowledge."
     ]);
 
     return {

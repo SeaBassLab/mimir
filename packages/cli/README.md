@@ -370,9 +370,20 @@ Generated
 ✓ AGENTS.md
 ✓ copilot-instructions.md
 ✓ cursor-rules.mdc
+✓ .agents/aps/index.md
 ✓ .agents/aps/components.md
+✓ .agents/aps/tokens.md
+✓ .agents/aps/hooks.md
+✓ .agents/aps/contexts.md
+✓ .agents/aps/templates.md
 ✓ .agents/aps/resources.md
 ```
+
+The specialized files are generated only when the installed providers publish
+that kind of knowledge. `index.md` routes agents by intent and instructs them to
+use published imports and APIs as authoritative, without inventing missing
+token paths, props, signatures, or exports. The projection is shared by all
+adapters and does not depend on the selected AI model.
 
 Discovery example:
 

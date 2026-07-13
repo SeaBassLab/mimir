@@ -112,15 +112,36 @@ Copilot, Cursor, and any configured adapter.
 mimir sync
 ```
 
-Generated `.agents/aps/components.md`:
+Mimir first normalizes the installed manifests into a model-neutral agent view.
+It then routes knowledge by intent instead of asking every model to interpret one
+large generic document:
 
-```markdown
+- `components.md`: UI components, exact imports, props, and variants.
+- `tokens.md`: tokens and themes with their public member paths.
+- `hooks.md`: hooks and callable signatures.
+- `contexts.md`: contexts and providers.
+- `templates.md`: templates and pages.
+- `resources.md`: remaining public resource kinds.
+
+Only files with knowledge are generated. `.agents/aps/index.md` tells every
+adapter which file to consult and explicitly prevents agents from inventing
+imports, token paths, props, or arguments when knowledge is unavailable.
+
+Generated `.agents/aps/components.md` entries are self-contained:
+
+````markdown
 # APS Components
 
 ## Button
 
 Provider: @acme/ui
 Resource ID: acme.ui.component.button
+
+Public import:
+
+```ts
+import { Button } from "@acme/ui";
+```
 
 Primary action control for submitting user intent.
 
@@ -131,12 +152,12 @@ Primary action control for submitting user intent.
 ### When not to use
 
 - Do not use for navigation; use a link instead.
-```
+````
 
-Non-component knowledge is projected to `.agents/aps/resources.md`, grouped by
-kind with its import, public API summary, React patterns, relationships, and
-authored usage guidance. Every adapter points to `.agents/aps/index.md`, which
-references both files.
+Each resource card keeps facts, API, authored guidance, safe deterministic
+usage, and relationships separate. Examples are emitted only when Mimir can
+derive them without guessing required arguments or props. Every adapter points
+to the same `.agents/aps/index.md`; there is no model-specific knowledge path.
 
 The author's intent now travels continuously from version-controlled source to
 the context read by consumer agents:

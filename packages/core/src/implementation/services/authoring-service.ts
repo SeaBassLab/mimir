@@ -46,6 +46,7 @@ export type AuthoringReport = {
 
 type AutoSeed = {
   name: string;
+  importName: string;
   kind: SemanticResourceKind;
   id: string;
   sourceFile: string;
@@ -148,7 +149,7 @@ function buildPersistedAutoBlock(seed: AutoSeed): Record<string, unknown> {
   return {
     source: {
       file: seed.sourceFile,
-      symbol: seed.name,
+      symbol: seed.importName,
       public: true
     },
     props: toPropsArray(seed.props),
@@ -320,6 +321,7 @@ function toManagedSeeds(
 
     byId.set(id, {
       name: resource.name,
+      importName: resource.importName,
       kind: resource.classification.kind,
       id,
       sourceFile: normalizeSlashes(resource.filePath),

@@ -3,6 +3,7 @@ import ts from "typescript";
 import type {
   ExtractedComponentFact,
   ExtractedProp,
+  PublicApiCallSignature,
   PublicApiMember,
   PublicApiProp,
   PublicApiTypeDescriptor,
@@ -472,6 +473,27 @@ function buildEmptyApi(): PublicComponentApi {
   };
 }
 
+function extractCallSignatures(
+  checker: ts.TypeChecker,
+  symbol: ts.Symbol,
+  declaration: ts.Declaration
+): PublicApiCallSignature[] {
+  const type = checker.getTypeOfSymbolAtLocation(symbol, declaration);
+  return checker.getSignaturesOfType(type, ts.SignatureKind.Call).map((signature) => ({
+    display: checker.signatureToString(signature, declaration, ts.TypeFormatFlags.NoTruncation),
+    parameters: signature.getParameters().map((parameter) => {
+      const parameterDeclaration = parameter.valueDeclaration ?? parameter.declarations?.[0] ?? declaration;
+      return {
+        name: parameter.getName(),
+        type: serializeType(checker, checker.getTypeOfSymbolAtLocation(parameter, parameterDeclaration)),
+        required: (parameter.flags & ts.SymbolFlags.Optional) === 0 &&
+          !(ts.isParameter(parameterDeclaration) && Boolean(parameterDeclaration.questionToken || parameterDeclaration.initializer))
+      };
+    }),
+    returns: serializeType(checker, signature.getReturnType())
+  }));
+}
+
 function appendMemberPath(parent: string, name: string): string {
   if (/^\d+$/.test(name)) {
     return `${parent}[${name}]`;
@@ -732,6 +754,7 @@ export async function extractTypeScriptPublicApi(
       const api = buildEmptyApi();
       if (declaration) {
         api.members = extractObjectMembers(checker, exportSymbol, declaration);
+        api.callSignatures = extractCallSignatures(checker, exportSymbol, declaration);
       }
       result.set(componentKey(component.filePath, component.name), {
         name: component.name,
@@ -751,6 +774,7 @@ export async function extractTypeScriptPublicApi(
 
     const api: PublicComponentApi = {
       props,
+      callSignatures: extractCallSignatures(checker, exportSymbol, declaration),
       events: [],
       slots: [],
       methods: [],

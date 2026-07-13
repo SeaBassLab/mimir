@@ -12,8 +12,8 @@ export function renderApsManagedSection(): string {
     "",
     "Generated AI package knowledge:",
     "",
-    "Read:",
-    "- .agents/aps/index.md",
+    "Before using an installed library, read .agents/aps/index.md and follow its intent routing.",
+    "Treat published imports and APIs as authoritative; do not invent unavailable knowledge.",
     "",
     APS_END_MARKER
   ].join("\n");
