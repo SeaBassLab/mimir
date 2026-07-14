@@ -26,17 +26,59 @@ type PackageJson = {
   [key: string]: unknown;
 };
 
+async function resolvePackageJsonPath(
+  requireFromApp: ReturnType<typeof createRequire>,
+  packageName: string
+): Promise<string | null> {
+  try {
+    return requireFromApp.resolve(`${packageName}/package.json`);
+  } catch {
+    // Some packages use `exports` and do not expose package.json directly.
+  }
+
+  let packageEntryPath: string;
+
+  try {
+    packageEntryPath = requireFromApp.resolve(packageName);
+  } catch {
+    return null;
+  }
+
+  let currentDir = path.dirname(packageEntryPath);
+
+  while (true) {
+    const candidate = path.join(currentDir, "package.json");
+
+    if (await fileExists(candidate)) {
+      try {
+        const parsed = await readJson<PackageJson>(candidate);
+        if (parsed.name === packageName) {
+          return candidate;
+        }
+      } catch {
+        // Ignore malformed package.json candidates and keep walking up.
+      }
+    }
+
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      break;
+    }
+    currentDir = parentDir;
+  }
+
+  return null;
+}
+
 export async function loadApsProvider(
   packageName: string,
   fromDirectory: string
 ): Promise<DiscoveredProvider | null> {
   const requireFromApp = createRequire(path.join(fromDirectory, "package.json"));
 
-  let packageJsonPath: string;
+  const packageJsonPath = await resolvePackageJsonPath(requireFromApp, packageName);
 
-  try {
-    packageJsonPath = requireFromApp.resolve(`${packageName}/package.json`);
-  } catch {
+  if (!packageJsonPath) {
     return null;
   }
 
