@@ -29,25 +29,50 @@ export function registerAuthorCommand(program: Command): void {
   const command = program
     .command("author")
     .description("Sync *.mimir.yaml descriptors (auto block) and preserve human authoring")
+    .argument("[selector]", "Component name or source path for incremental sync")
     .option("--json", "Emit machine-readable authoring result")
     .option("--dry-run", "Show descriptor sync plan without writing files")
     .option("--delete-orphans", "Delete orphaned descriptor resources during sync")
+    .option("--update", "Run incremental sync using [selector] or --component")
+    .option("--component <name>", "Run incremental sync for one component name")
     .option("--no-refresh-auto", "Skip automatic descriptor field refresh")
     .option("--interactive", "Reserved for future guided human authoring mode")
     .option("--ai", "Reserved for future AI-assisted human authoring mode")
     .action(
-      async (options: {
-        json?: boolean;
-        deleteOrphans?: boolean;
-        refreshAuto?: boolean;
-        interactive?: boolean;
-        ai?: boolean;
-      }) => {
+      async (
+        selector: string | undefined,
+        options: {
+          json?: boolean;
+          deleteOrphans?: boolean;
+          refreshAuto?: boolean;
+          update?: boolean;
+          component?: string;
+          interactive?: boolean;
+          ai?: boolean;
+        }
+      ) => {
       try {
+        const selectorArg = typeof selector === "string" && selector.trim() !== "" ? selector.trim() : undefined;
+        const componentName =
+          typeof options.component === "string" && options.component.trim() !== ""
+            ? options.component.trim()
+            : undefined;
+        const useSelector = componentName ? undefined : selectorArg;
+
+        if (options.update && !componentName && !selectorArg) {
+          throw new Error("--update requires [selector] or --component <name>.");
+        }
+
+        if (componentName && selectorArg) {
+          warn("Both [selector] and --component were provided; using --component and ignoring [selector].");
+        }
+
         const report = await runAuthoringWorkflow(process.cwd(), {
           dryRun: isDryRun(),
           deleteOrphans: Boolean(options.deleteOrphans),
           refreshAuto: options.refreshAuto !== false,
+          componentName,
+          resourceSelector: useSelector,
           interactive: Boolean(options.interactive),
           ai: Boolean(options.ai)
         });

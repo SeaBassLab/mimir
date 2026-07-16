@@ -217,6 +217,7 @@ Descriptor-first workflow notes:
 - Mimir no longer depends on a fixed source root such as `src`.
 - `mimir init` is bootstrap-only and does not discover resources or create descriptors.
 - `mimir author` runs Knowledge Providers over one shared workspace, applies the Persistence Policy, creates missing descriptors, and refreshes only `auto` fields.
+- Incremental authoring is available with `mimir author --component <Name>` or `mimir author <selector> --update` to resync one component/path without touching unrelated descriptors.
 - `mimir generate` reads only `*.mimir.yaml` descriptors as the provider contract source.
 
 Current descriptor shape (schema v2):
@@ -432,7 +433,7 @@ mimir governance --json
 | Command | Role | Description | Example |
 | --- | --- | --- | --- |
 | `mimir init` | Provider | Initialize APS support in package metadata (bootstrap only). | `mimir init` |
-| `mimir author` | Provider | Sync descriptor `auto` blocks, preserve `human`, and report/delete orphans. | `mimir author --delete-orphans` |
+| `mimir author` | Provider | Sync descriptor `auto` blocks, preserve `human`, report/delete orphans in full mode, and support incremental single-component updates. | `mimir author --component ParallelChat` |
 | `mimir generate` | Provider | Compile APS resources from descriptor contracts only. | `mimir generate --force` |
 | `mimir discover` | Consumer | Discover APS-enabled dependencies/providers. | `mimir discover` |
 | `mimir validate` | Both | Validate APS Manifest and declared resources. | `mimir validate` |

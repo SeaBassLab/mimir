@@ -44,17 +44,21 @@ const COMMANDS: DxCommandMeta[] = [
   {
     name: "author",
     description: "Sync *.mimir.yaml descriptors (auto) while preserving human authoring",
-    usage: `${cliCommand("author")} [--json] [--dry-run] [--delete-orphans]`,
+    usage: `${cliCommand("author")} [selector] [--component <name>] [--update] [--json] [--dry-run] [--delete-orphans]`,
     examples: [
       cliCommand("author"),
       `${cliCommand("author")} --dry-run`,
       `${cliCommand("author")} --delete-orphans`,
+      `${cliCommand("author")} --component ParallelChat`,
+      `${cliCommand("author")} src/components/ParallelChat --update`,
       `${cliCommand("author")} --json`
     ],
     flags: [
       { name: "--json", description: "Emit deterministic machine-readable authoring result." },
       { name: "--dry-run", description: "Show descriptor sync plan without writing files." },
       { name: "--delete-orphans", description: "Delete orphaned descriptor resources during sync." },
+      { name: "--update", description: "Run incremental sync using [selector] or --component." },
+      { name: "--component <name>", description: "Run incremental sync for one component name." },
       { name: "--no-refresh-auto", description: "Skip automatic descriptor field refresh." },
       { name: "--interactive", description: "Reserved for future guided human authoring mode." },
       { name: "--ai", description: "Reserved for future AI-assisted human authoring mode." }
@@ -64,7 +68,8 @@ const COMMANDS: DxCommandMeta[] = [
     category: "workflow",
     notes: [
       "Phase 1: discovers resources and synchronizes only the descriptor auto block.",
-      "Phase 2: preserves human fields; no automatic overwrite of human authoring."
+      "Phase 2: preserves human fields; no automatic overwrite of human authoring.",
+      "Incremental mode targets one component/path and skips orphan deletion to avoid unrelated changes."
     ],
     exitCodes: [
       { code: 0, meaning: "Descriptor files created or already present." },

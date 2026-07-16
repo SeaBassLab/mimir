@@ -26,6 +26,8 @@ type AuthoringOptions = {
   dryRun?: boolean;
   refreshAuto?: boolean;
   deleteOrphans?: boolean;
+  componentName?: string;
+  resourceSelector?: string;
   interactive?: boolean;
   ai?: boolean;
 };
@@ -113,6 +115,19 @@ type ExistingDescriptorResource = {
 
 function normalizeSlashes(value: string): string {
   return value.split(path.sep).join("/");
+}
+
+function normalizeSelector(value: string): string {
+  return normalizeSlashes(value).trim().toLowerCase();
+}
+
+function trimFileExtension(value: string): string {
+  const extension = path.extname(value);
+  if (extension === "") {
+    return value;
+  }
+
+  return value.slice(0, -extension.length);
 }
 
 function sanitizePathSegment(value: string): string {
@@ -340,12 +355,47 @@ function toManagedSeeds(
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function matchesComponentName(seed: AutoSeed, componentName: string): boolean {
+  const expected = normalizeSelector(componentName);
+  if (expected === "") {
+    return true;
+  }
+
+  return normalizeSelector(seed.name) === expected || normalizeSelector(seed.importName) === expected;
+}
+
+function matchesResourceSelector(seed: AutoSeed, selector: string): boolean {
+  const expected = normalizeSelector(selector);
+  if (expected === "") {
+    return true;
+  }
+
+  const seedName = normalizeSelector(seed.name);
+  const seedImportName = normalizeSelector(seed.importName);
+  const sourceFile = normalizeSelector(seed.sourceFile);
+  const sourceFileName = normalizeSelector(path.basename(sourceFile));
+  const sourceBaseName = normalizeSelector(trimFileExtension(path.basename(sourceFile)));
+  const expectedFileName = normalizeSelector(path.basename(expected));
+  const expectedBaseName = normalizeSelector(trimFileExtension(path.basename(expected)));
+
+  if (seedName === expected || seedImportName === expected) {
+    return true;
+  }
+
+  if (sourceFile === expected || sourceFileName === expectedFileName || sourceBaseName === expectedBaseName) {
+    return true;
+  }
+
+  return sourceFile.endsWith(`/${expected}`) || sourceFile.includes(`/${expected}/`) || sourceFile.includes(expected);
+}
+
 export async function runAuthoringWorkflow(
   cwd: string,
   options: AuthoringOptions = {}
 ): Promise<AuthoringReport> {
   const shouldRefreshAuto = options.refreshAuto !== false;
-  const shouldDeleteOrphans = options.deleteOrphans === true;
+  const isIncremental = Boolean(options.componentName || options.resourceSelector);
+  const shouldDeleteOrphans = options.deleteOrphans === true && !isIncremental;
 
   const packageMetadata = await readPackageMetadata(cwd);
   const workspace = await createKnowledgeWorkspace(cwd, packageMetadata.packageName, {
@@ -353,7 +403,18 @@ export async function runAuthoringWorkflow(
     excludeKinds: packageMetadata.discovery.excludeKinds
   });
   const graph = await buildKnowledgeGraph(workspace);
-  const seeds = toManagedSeeds(new DescriptorPersistencePolicy().select(graph));
+  const discoveredSeeds = toManagedSeeds(new DescriptorPersistencePolicy().select(graph));
+  const seeds = discoveredSeeds.filter((seed) => {
+    if (options.componentName && !matchesComponentName(seed, options.componentName)) {
+      return false;
+    }
+
+    if (options.resourceSelector && !matchesResourceSelector(seed, options.resourceSelector)) {
+      return false;
+    }
+
+    return true;
+  });
   const existingDescriptorFiles = await discoverDescriptorFiles(cwd);
   const existingEntries: ExistingDescriptorResource[] = [];
 
@@ -400,6 +461,15 @@ export async function runAuthoringWorkflow(
   }
   if (options.ai) {
     warnings.push("--ai is not implemented yet. Running sync-only mode.");
+  }
+  if (isIncremental && options.deleteOrphans === true) {
+    warnings.push("--delete-orphans is ignored in incremental mode to avoid deleting unrelated descriptors.");
+  }
+  if (isIncremental && seeds.length === 0) {
+    const criteria = options.componentName
+      ? `component '${options.componentName}'`
+      : `selector '${options.resourceSelector}'`;
+    throw new Error(`No discovered resources matched ${criteria}.`);
   }
 
   for (const seed of seeds) {
@@ -474,32 +544,34 @@ export async function runAuthoringWorkflow(
     pendingHumanResources.push(`${descriptorRelativePath}#${seed.id}`);
   }
 
-  for (const entry of existingEntries) {
-    const identity = entry.identity;
-    if (!identity || consumedIdentities.has(identity) || !isComponentResource(entry.resource)) {
-      continue;
-    }
+  if (!isIncremental) {
+    for (const entry of existingEntries) {
+      const identity = entry.identity;
+      if (!identity || consumedIdentities.has(identity) || !isComponentResource(entry.resource)) {
+        continue;
+      }
 
-    const id = typeof entry.resource.id === "string" ? entry.resource.id : identity;
-    orphanedResources.push(`${entry.sourceRef}#${id}`);
+      const id = typeof entry.resource.id === "string" ? entry.resource.id : identity;
+      orphanedResources.push(`${entry.sourceRef}#${id}`);
 
-    if (!shouldDeleteOrphans) {
-      continue;
-    }
+      if (!shouldDeleteOrphans) {
+        continue;
+      }
 
-    if (entry.schemaVersion === 1 && entry.resourcesInFile > 1) {
-      warnings.push(`${entry.sourceRef}: cannot delete orphan from schemaVersion 1 multi-resource descriptor automatically.`);
-      continue;
-    }
+      if (entry.schemaVersion === 1 && entry.resourcesInFile > 1) {
+        warnings.push(`${entry.sourceRef}: cannot delete orphan from schemaVersion 1 multi-resource descriptor automatically.`);
+        continue;
+      }
 
-    if (options.dryRun) {
-      plannedFiles.push(entry.sourceRef);
+      if (options.dryRun) {
+        plannedFiles.push(entry.sourceRef);
+        deletedOrphans.push(`${entry.sourceRef}#${id}`);
+        continue;
+      }
+
+      await deleteFile(entry.filePath);
       deletedOrphans.push(`${entry.sourceRef}#${id}`);
-      continue;
     }
-
-    await deleteFile(entry.filePath);
-    deletedOrphans.push(`${entry.sourceRef}#${id}`);
   }
 
   return {
